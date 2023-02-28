@@ -1,24 +1,27 @@
 /**
-  * @file       param.h
-  * @author     pczhou (pczhou@streamax.com)
-  * @brief      
-  * @version    0.1
-  * @date       2023-02-07
-  * 
-  * @copyright Copyright (c) 2023  锐明技术股份有限公司
-  * 
-  * @par 修改日志:
-  * <table>
-  * <tr><th>Date       <th>Version <th>Author  <th>Description
-  * <tr><td>2023-02-07 <td>1.0     <td>pczhou     <td>内容
-  * </table>
+  **********************************************************************************************************************
+  * @file    param.h
+  * @brief   该文件提供参数管理框架所有函数原型
+  * @author  const_zpc    any question please send mail to const_zpc@163.com
+  * @version V0.1
+  * @date    2023-02-07
+  **********************************************************************************************************************
+  *
+  **********************************************************************************************************************
   */
+
+/* Define to prevent recursive inclusion -----------------------------------------------------------------------------*/
 
 #ifndef _PARAM_H_
 #define _PARAM_H_
 
+/* Includes ----------------------------------------------------------------------------------------------------------*/
 #include <stdint.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+ extern "C" {
+#endif 
 
 typedef int8_t      PARAM_INT8_T;
 typedef int16_t     PARAM_INT16_T;
@@ -136,5 +139,9 @@ extern int Param_ModifyById(ParamTable_t *pParamTable, uint32_t id, const void *
 extern int Param_ModifyByName(ParamTable_t *pParamTable, const char *pszName, const void *pNewData);
 extern size_t Param_Serialize(ParamTable_t *pParamTable, uint8_t *pBuf);
 extern void Param_Parse(ParamTable_t *pParamTable, const uint8_t *pBuf);
+
+#ifdef __cplusplus
+ }
+#endif
 
 #endif // !_PARAM_H_

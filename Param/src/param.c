@@ -1,26 +1,26 @@
 /**
-  * @file       param.c
-  * @author     pczhou (pczhou@streamax.com)
-  * @brief      
-  * @version    0.1
-  * @date       2023-02-07
-  * 
-  * @copyright Copyright (c) 2023  锐明技术股份有限公司
-  * 
-  * @par 修改日志:
-  * <table>
-  * <tr><th>Date       <th>Version <th>Author  <th>Description
-  * <tr><td>2023-02-07 <td>1.0     <td>pczhou     <td>内容
-  * </table>
+  **********************************************************************************************************************
+  * @file    param.c
+  * @brief   该文件提供参数管理框架功能
+  * @author  const_zpc  any question please send mail to const_zpc@163.com
+  * @version V0.1
+  * @date    2023-02-07
+  *
+  * @details  功能详细说明：
+  *           + 参数修改和重置管理
+  *           + 参数序列化和反序列化
+  *
+  **********************************************************************************************************************
+  * 源码路径：https://gitee.com/const-zpc/param.git 具体问题及建议可在该网址填写 Issue
+  *
+  *
+  **********************************************************************************************************************
   */
 
-
+/* Includes ----------------------------------------------------------------------------------------------------------*/
 #include "param.h"
 #include <string.h>
 
-
-
-// const uint32_t sg_tParamTableNum = sizeof(sg_tParamTable) / sizeof(sg_tParamTable[0]);
 
 #define CASE_CHANGE(type) \
 case type:\
