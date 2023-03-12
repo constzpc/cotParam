@@ -16,17 +16,15 @@
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
+/** 反序列化完整信息的解析单次得到最大参数表元素数目设置 */
+#define PARAM_PARSE_MAX_NUM        10
 
-#define PARAM_SERIALIZE_TAG_ENCODED 4 // 键值对 + 编码压缩序列化方式
-#define PARAM_SERIALIZE_TAG         3 // 键值对序列化方式
-#define PARAM_SERIALIZE_ENCODED     2 // 编码压缩序列化方式，按照ID顺序序列化
-#define PARAM_SERIALIZE_STRUCT      1 // 常规序列化方式，按照ID顺序序列化
-
-/** 参数序列化方式 */
-#define PARAM_SERIALIZE_MODE        PARAM_SERIALIZE_STRUCT
 
 /** 字符串参数长度需要使用的字节(1：最长可定义254长度的字符串参数, 2：最长可定义63335长度的字符串参数) */
 #define PARAM_STRING_SIZE           1
+
+/** 参数名字最大定义长度（包括结束符） */
+#define PARAM_NAME_MAX_LENGTH       32
 
 
 #endif

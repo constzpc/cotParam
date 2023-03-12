@@ -30,14 +30,14 @@
 #define PARAM_ATTR_WRITE   0X02 // 可写权限
 #define PARAM_ATTR_RESET   0X04 // 可重置权限
 
+/** 参数序列化选项 */
 
-#define PARAM_PACK_ALL      0xFF // 打包所有信息
-#define PARAM_PACK_NAME     0x01 // 打包名字信息
-#define PARAM_PACK_LENGTH   0x02 // 打包长度信息
-#define PARAM_PACK_ATTR     0x04 // 打包属性信息
-#define PARAM_PACK_DEF_VAL  0x10 // 打包默认值信息
-#define PARAM_PACK_MIN_VAL  0x20 // 打包最小值信息
-#define PARAM_PACK_MAX_VAL  0x40 // 打包最大值信息
+#define PARAM_PACK_ALL      0x7F // 所有信息都序列化
+#define PARAM_PACK_NAME     0x01 // 参数名字信息序列化
+#define PARAM_PACK_ATTR     0x02 // 参数属性信息序列化
+#define PARAM_PACK_DEF_VAL  0x04 // 参数默认值信息序列化
+#define PARAM_PACK_MIN_VAL  0x08 // 参数最小值信息序列化
+#define PARAM_PACK_MAX_VAL  0x10 // 参数最大值信息序列化
 
 typedef int8_t      PARAM_INT8_T;
 typedef int16_t     PARAM_INT16_T;
@@ -53,7 +53,7 @@ typedef char        PARAM_STARING_T;
 
 typedef enum
 {
-    PARAM_INT8,
+    PARAM_INT8 = 0,
     PARAM_INT16,
     PARAM_INT32,
     PARAM_INT64,
@@ -68,23 +68,16 @@ typedef enum
 
 typedef struct
 {
-    const char *pszName;            /*!< 名称 */
-    uint16_t id;                    /*!< 唯一ID */
-    ParamType_e type;               /*!< 类型, @enum ParamType_e */
-    uint16_t length;                /*!< 长度 */
-    uint8_t attr;                   /*!< 属性 */
-    const void *pCurValue;          /*!< 当前值指针 */
-    const void *pDefValue;          /*!< 默认值指针 */
-    const void *pMinValue;          /*!< 最小值指针 */
-    const void *pMaxValue;          /*!< 最大值指针 */
+    char *pszName;            /*!< 名称 */
+    uint16_t id;              /*!< 唯一ID */
+    uint8_t type;             /*!< 类型, @enum ParamType_e */
+    uint16_t length;          /*!< 长度 */
+    uint8_t attr;             /*!< 属性 */
+    void *pCurValue;          /*!< 当前值指针 */
+    void *pDefValue;          /*!< 默认值指针 */
+    void *pMinValue;          /*!< 最小值指针 */
+    void *pMaxValue;          /*!< 最大值指针 */
 } ParamInfo_t;
-
-
-// typedef struct
-// {
-//     const ParamInfo_t *pTab;
-//     uint32_t num;
-// } ParamTable_t;
 
 #ifdef __cplusplus
  }

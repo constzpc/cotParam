@@ -22,20 +22,6 @@
  extern "C" {
 #endif 
 
-// typedef struct
-// {
-//     uint16_t id;
-//     uint16_t length;
-//     char szName[32];
-//     uint8_t type;
-//     uint8_t attr;
-//     uint8_t curVal[8];
-//     uint8_t defVal[8];
-//     uint8_t minVal[8];
-//     uint8_t maxVal[8];
-// } ParamData_t;
-
-
 
 /**
   * @brief  定义参数
@@ -71,7 +57,7 @@
   * @param  name 参数名（变量名）
   * @param  type 参数类型 @enum ParamType_e 取值
   */
-#define PARAM_REG(id, name, type, attr)  { #name, id, type, sizeof(name), attr, &name, &def_##name, &min_##name, &max_##name }
+#define PARAM_REG(id, name, type, attr)  { #name, id, type, sizeof(name), attr, &name, (void *)&def_##name, (void *)&min_##name, (void *)&max_##name }
 
 /**
   * @brief  字符串参数注册
@@ -79,7 +65,7 @@
   * @param  id   参数唯一 ID
   * @param  name 参数名（变量名）
   */
-#define PARAM_STR_REG(id, name, attr)  { #name, id, PARAM_STARING, sizeof(name), attr, name, def_##name, NULL, NULL }
+#define PARAM_STR_REG(id, name, attr)  { #name, id, PARAM_STARING, sizeof(name), attr, name, (void *)def_##name, NULL, NULL }
 
 /**
   * @brief  参数声明
@@ -104,37 +90,13 @@
     extern char name[length];\
     extern char def_##name[];
 
-#define DEFINE_PARAM(type)  \
-struct param\
-{\
-    char *pszName;\
-    uint32_t id;\
-    ParamType_e type;\
-    uint16_t length;\
-    uint8_t attr;\
-    type##_T val;\
-    type##_T def;\
-    type##_T min;\
-    type##_T max;\
-};
+
+extern size_t Param_MultiSerialize(uint8_t *pBuf, const ParamInfo_t *paramTable, uint16_t num, uint8_t opt);
+extern uint16_t Param_MultiParse(uint8_t *pBuf, size_t length, ParamInfo_t *paramTable, uint16_t num);
 
 
-extern int Param_Init(const ParamInfo_t *paramTable, uint16_t num);
-
-extern int Param_Load(void);
-extern int Param_Save(void);
-
-extern size_t Param_Read(uint16_t id, uint8_t *pBuf, uint8_t opt);
-extern size_t Param_Reads(uint16_t id, uint16_t num, uint8_t *pBuf, uint8_t opt);
-
-
-// extern int Param_Reset(ParamTable_t *pParamTable);
-// extern int Param_ModifyById(ParamTable_t *pParamTable, uint32_t id, const void *pNewData);
-// extern int Param_ModifyByName(ParamTable_t *pParamTable, const char *pszName, const void *pNewData);
-
-
-// extern size_t Param_Serialize(ParamTable_t *pParamTable, uint8_t *pBuf);
-// extern void Param_Parse(ParamTable_t *pParamTable, const uint8_t *pBuf);
+extern size_t Param_Serialize(uint8_t *pBuf, const ParamInfo_t *paramTable, uint16_t num, uint8_t isAddKey, uint8_t isUseEncoded);
+extern uint16_t Param_Parse(uint8_t *pBuf, size_t length, ParamInfo_t *paramTable, uint16_t num, uint8_t isAddKey, uint8_t isUseEncoded);
 
 #ifdef __cplusplus
  }

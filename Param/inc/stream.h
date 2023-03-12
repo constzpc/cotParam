@@ -21,8 +21,15 @@
  extern "C" {
 #endif 
 
-extern uint32_t StreamToBin(uint8_t *pbuf, const ParamInfo_t *pParamTab, uint16_t num);
-extern void StreamFromBin(uint8_t *pbuf, uint32_t length, ParamInfo_t *pParamTab, uint16_t num);
+
+
+uint8_t *PackParam(uint8_t *pBuf, const ParamInfo_t *pParam, uint8_t isUseEncoded, uint8_t opt);
+uint8_t *PackTagAndParam(uint8_t *pBuf, const ParamInfo_t *pParam, uint8_t isUseEncoded, uint8_t opt);
+uint8_t *PackTagAndOptAndParam(uint8_t *pBuf, const ParamInfo_t *pParam, uint8_t isUseEncoded, uint8_t opt);
+
+uint8_t *UnPackParam(uint8_t *pBuf, ParamInfo_t *pParam, uint8_t isUseDecode, uint8_t opt);
+uint8_t *UnPackTagAndParam(uint8_t *pBuf, ParamInfo_t *pParam, uint8_t isUseDecode, uint8_t opt);
+uint8_t *UnPackTagAndOptAndParam(uint8_t *pBuf, ParamInfo_t *pParam);
 
 #ifdef __cplusplus
  }

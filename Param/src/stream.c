@@ -118,64 +118,6 @@ static uint8_t *uMemUnPack(uint8_t *ptr, uint64_t *pVal, uint8_t size)
     return ptr;
 }
 
-static uint8_t *PackFloat(uint8_t *ptr, float val)
-{
-    unFloat_t t;
-
-    t.fdata = val;
-
-    for (int i = 0; i < 4; i++)
-    {
-        *ptr++ = t.data >> (i * 8);
-    }
-
-    return ptr;
-}
-
-static uint8_t *UnPackFloat(uint8_t *ptr, float *pVal)
-{
-    unFloat_t t;
-    t.data = 0;
-
-    for (int i = 0; i < 4; i++)
-    {
-        t.data |= ((uint32_t)(*ptr) << (i * 8));
-        ptr++;
-    }
-
-    *pVal = t.fdata;
-    return ptr;
-}
-
-static uint8_t *PackDouble(uint8_t *ptr, double val)
-{
-    unDouble_t t;
-
-    t.fdata = val;
-
-    for (int i = 0; i < 8; i++)
-    {
-        *ptr++ = t.data >> (i * 8);
-    }
-
-    return ptr;
-}
-
-static uint8_t *UnPackDouble(uint8_t *ptr, double *pVal)
-{
-    unDouble_t t;
-    t.data = 0;
-
-    for (int i = 0; i < 8; i++)
-    {
-        t.data |= ((uint64_t)(*ptr) << (i * 8));
-        ptr++;
-    }
-
-    *pVal = t.fdata;
-    return ptr;
-}
-
 static uint8_t *PackTag(uint8_t *pbuf, const ParamInfo_t *pParam)
 {
     uint8_t *ptr = pbuf;
@@ -218,359 +160,570 @@ static ParamInfo_t *FindTag(uint16_t id, uint8_t type, const ParamInfo_t *pParam
     return pParam;
 }
 
-static uint8_t *StructPack(uint8_t *pbuf, const ParamInfo_t *pParam)
+static uint8_t *PackInt8(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
 {
-    uint8_t *ptr = pbuf;
-
-    switch (pParam->type)
+    if (isEncoded)
     {
-    case PARAM_INT8:
-        ptr = sMemPack(ptr, (*(int8_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_INT16:
-        ptr = sMemPack(ptr, (*(int16_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_INT32:
-        ptr = sMemPack(ptr, (*(int32_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_INT64:
-        ptr = sMemPack(ptr, (*(int64_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_UINT8:
-        ptr = uMemPack(ptr, (*(uint8_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_UINT16:
-        ptr = uMemPack(ptr, (*(uint16_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_UINT32:
-        ptr = uMemPack(ptr, (*(uint32_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_UINT64:
-        ptr = uMemPack(ptr, (*(uint64_t *)pParam->pCurValue), pParam->length);
-        break;
-    case PARAM_FLOAT:
-        ptr = PackFloat(ptr, *(float *)pParam->pCurValue);
-        break;
-    case PARAM_DOUBLE:
-        ptr = PackDouble(ptr, *(double *)pParam->pCurValue);
-        break;
-    case PARAM_STARING:
-        memcpy(ptr, pParam->pCurValue,  pParam->length);
-        ptr += pParam->length;
-        break;
-    
-    default:
-        break;
+        *ptr++ = (uint8_t)(*(int8_t *)pVal);
+    }
+    else
+    {
+        ptr = sMemPack(ptr, (*(int8_t *)pVal), sizeof(int8_t));
     }
 
     return ptr;
 }
 
-static uint8_t *StructUnPack(uint8_t *pbuf, uint8_t type, const ParamInfo_t *pParam)
+static uint8_t *PackInt16(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
 {
-    uint8_t *ptr = pbuf;
-    uint64_t u64Val;
+    if (isEncoded)
+    {
+        ptr = ZigzagEncoded(ptr, (*(int16_t *)pVal));
+    }
+    else
+    {
+        ptr = sMemPack(ptr, (*(int16_t *)pVal), sizeof(int16_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackInt32(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    if (isEncoded)
+    {
+        ptr = ZigzagEncoded(ptr, (*(int32_t *)pVal));
+    }
+    else
+    {
+        ptr = sMemPack(ptr, (*(int32_t *)pVal), sizeof(int32_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackInt64(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    if (isEncoded)
+    {
+        ptr = ZigzagEncoded(ptr, (*(int64_t *)pVal));
+    }
+    else
+    {
+        ptr = sMemPack(ptr, (*(int64_t *)pVal), sizeof(int64_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackUint8(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    if (isEncoded)
+    {
+        *ptr++ = (*(uint8_t *)pVal);
+    }
+    else
+    {
+        ptr = uMemPack(ptr, (*(uint8_t *)pVal), sizeof(uint8_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackUint16(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    if (isEncoded)
+    {
+        ptr = VarintEncoded(ptr, (*(uint16_t *)pVal));
+    }
+    else
+    {
+        ptr = uMemPack(ptr, (*(uint16_t *)pVal), sizeof(uint16_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackUint32(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    if (isEncoded)
+    {
+        ptr = VarintEncoded(ptr, (*(uint32_t *)pVal));
+    }
+    else
+    {
+        ptr = uMemPack(ptr, (*(uint32_t *)pVal), sizeof(uint32_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackUint64(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    if (isEncoded)
+    {
+        ptr = VarintEncoded(ptr, (*(uint64_t *)pVal));
+    }
+    else
+    {
+        ptr = uMemPack(ptr, (*(uint64_t *)pVal), sizeof(uint64_t));
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackFloat(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    unFloat_t t;
+
+    t.fdata = *(float *)pVal;
+
+    for (int i = 0; i < 4; i++)
+    {
+        *ptr++ = t.data >> (i * 8);
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackDouble(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    unFloat_t t;
+
+    t.fdata = *(double *)pVal;
+
+    for (int i = 0; i < 8; i++)
+    {
+        *ptr++ = t.data >> (i * 8);
+    }
+
+    return ptr;
+}
+
+static uint8_t *PackString(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    // if (isEncoded)
+    // {
+    //     length = strlen((char *)pVal) > length ? length : strlen((char *)pVal);
+    // }
+
+    for (int i = 0; i < PARAM_STRING_SIZE; i++)
+    {
+        *ptr++ = (length >> (i * 8)) & 0xff;
+    }
+
+    memcpy(ptr, pVal,  length);
+    ptr += length;
+
+    return ptr;
+}
+
+typedef uint8_t *(*PackFun_t)(uint8_t *ptr, const void *pVal, uint16_t length, uint8_t isEncoded);
+
+PackFun_t packFunTable[]={
+    PackInt8,
+    PackInt16,
+    PackInt32,
+    PackInt64,
+    PackUint8,
+    PackUint16,
+    PackUint32,
+    PackUint64,
+    PackFloat,
+    PackDouble,
+    PackString
+};
+
+static uint8_t *PackData(uint8_t *pbuf, uint8_t type, void *pVal, uint16_t length, uint8_t isEncoded)
+{
+    return packFunTable[type](pbuf, pVal, length, isEncoded);
+}
+
+uint8_t *PackParam(uint8_t *pBuf, const ParamInfo_t *pParam, uint8_t isUseEncoded, uint8_t opt)
+{
+    pBuf = PackData(pBuf, pParam->type, pParam->pCurValue, pParam->length, isUseEncoded);
+
+    if (opt & PARAM_PACK_NAME)
+    {
+        uint16_t length = strlen(pParam->pszName) >= PARAM_NAME_MAX_LENGTH ? PARAM_NAME_MAX_LENGTH - 1 : strlen(pParam->pszName);
+        memcpy(pBuf, pParam->pszName, length + 1);
+        pBuf += (length + 1);
+    }
+
+    if (opt & PARAM_PACK_ATTR)
+    {
+        pBuf = PackUint8(pBuf, &pParam->attr, 1, 0);
+    }
+
+    if (opt & PARAM_PACK_DEF_VAL)
+    {
+        pBuf = PackData(pBuf, pParam->type, pParam->pDefValue, pParam->length, isUseEncoded);
+    }
+
+    if ((opt & PARAM_PACK_MIN_VAL) && pParam->type != PARAM_STARING)
+    {
+        pBuf = PackData(pBuf, pParam->type, pParam->pMinValue, pParam->length, isUseEncoded);
+    }
+
+    if ((opt & PARAM_PACK_MAX_VAL) && pParam->type != PARAM_STARING)
+    {
+        pBuf = PackData(pBuf, pParam->type, pParam->pMaxValue, pParam->length, isUseEncoded);
+    }
+
+    return pBuf;
+}
+
+uint8_t *PackTagAndParam(uint8_t *pBuf, const ParamInfo_t *pParam, uint8_t isUseEncoded, uint8_t opt)
+{
+    isUseEncoded = isUseEncoded > 0 ? 1 : 0;
+    pBuf = PackTag(pBuf, pParam);
+    pBuf = PackParam(pBuf, pParam, isUseEncoded, opt);
+
+    return pBuf;
+}
+
+uint8_t *PackTagAndOptAndParam(uint8_t *pBuf, const ParamInfo_t *pParam, uint8_t isUseEncoded, uint8_t opt)
+{
+    isUseEncoded = isUseEncoded > 0 ? 1 : 0;
+    pBuf = PackTag(pBuf, pParam);
+    *pBuf++ = (isUseEncoded << 7) |  (opt & 0x7f);
+
+    pBuf = PackParam(pBuf, pParam, isUseEncoded, opt);
+
+    return pBuf;
+}
+
+static uint8_t *UnPackInt8(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
     int64_t s64Val;
-    float fVal;
-    double dVal;
 
-    switch (type)
+    if (isDecode)
     {
-    case PARAM_INT8:
-        ptr = sMemUnPack(ptr, &s64Val, pParam->length);
-        if (pParam != NULL)
-            (*(int8_t *)pParam->pCurValue) = (int8_t)s64Val;
-        break;
-    case PARAM_INT16:   
-        ptr = sMemUnPack(ptr, &s64Val, pParam->length);
-        if (pParam != NULL)
-            (*(int16_t *)pParam->pCurValue) = (int16_t)s64Val;
-        break;
-    case PARAM_INT32:
-        ptr = sMemUnPack(ptr, &s64Val, pParam->length);
-        if (pParam != NULL)
-            (*(int32_t *)pParam->pCurValue) = (int32_t)s64Val;
-        break;
-    case PARAM_INT64:
-        ptr = sMemUnPack(ptr, &s64Val, pParam->length);
-        if (pParam != NULL)
-            (*(int64_t *)pParam->pCurValue) = s64Val;
-        break;
-    case PARAM_UINT8:
-        ptr = uMemUnPack(ptr, &u64Val, pParam->length);
-        if (pParam != NULL)
-            (*(uint8_t *)pParam->pCurValue) = (uint8_t)u64Val;
-        break;
-    case PARAM_UINT16:
-        ptr = uMemUnPack(ptr, &u64Val, pParam->length);
-        if (pParam != NULL)
-            (*(uint16_t *)pParam->pCurValue) = (uint16_t)u64Val;
-        break;
-    case PARAM_UINT32:
-        ptr = uMemUnPack(ptr, &u64Val, pParam->length);
-        if (pParam != NULL)
-            (*(uint32_t *)pParam->pCurValue) = (uint32_t)u64Val;
-        break;
-    case PARAM_UINT64:
-        ptr = uMemUnPack(ptr, &u64Val, pParam->length);
-        if (pParam != NULL)
-            (*(uint64_t *)pParam->pCurValue) = u64Val;
-        break;
-    case PARAM_FLOAT:
-        ptr = UnPackFloat(ptr, &fVal);
-        if (pParam != NULL)
-            (*(float *)pParam->pCurValue) = fVal;
-        break;
-    case PARAM_DOUBLE:
-        ptr = UnPackDouble(ptr, &dVal);
-        if (pParam != NULL)
-            (*(double *)pParam->pCurValue) = dVal;
-        break;
-    case PARAM_STARING:
-        if (pParam != NULL)
-            memcpy((void *)pParam->pCurValue, ptr, pParam->length);
-        ptr += pParam->length;
-        break;
-    
-    default:
-        break;
+        s64Val = *(int8_t *)ptr;
+        ptr++;
     }
+    else
+    {
+        ptr = sMemUnPack(ptr, &s64Val, sizeof(int8_t));
+    }
+
+    if (pVal != NULL)
+    {
+        *(int8_t *)pVal = (int8_t)s64Val;
+    }
+
+    *pLength = sizeof(int8_t);
 
     return ptr;
 }
 
-static uint8_t *Encoded(uint8_t *pbuf, const ParamInfo_t *pParam)
+static uint8_t *UnPackInt16(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
 {
-    uint8_t *ptr = pbuf;
-
-    switch (pParam->type)
-    {
-    case PARAM_INT8:
-        *ptr++ = (uint8_t)(*(int8_t *)pParam->pCurValue);
-        // ptr = ZigzagEncoded(ptr, (*(int8_t *)pParam->pCurValue));
-        break;
-    case PARAM_INT16:
-        ptr = ZigzagEncoded(ptr, (*(int16_t *)pParam->pCurValue));
-        break;
-    case PARAM_INT32:
-        ptr = ZigzagEncoded(ptr, (*(int32_t *)pParam->pCurValue));
-        break;
-    case PARAM_INT64:
-        ptr = ZigzagEncoded(ptr, (*(int64_t *)pParam->pCurValue));
-        break;
-    case PARAM_UINT8:
-        *ptr++ = (*(uint8_t *)pParam->pCurValue);
-        // ptr = VarintEncoded(ptr, (*(uint8_t *)pParam->pCurValue));
-        break;
-    case PARAM_UINT16:
-        ptr = VarintEncoded(ptr, (*(uint16_t *)pParam->pCurValue));
-        break;
-    case PARAM_UINT32:
-        ptr = VarintEncoded(ptr, (*(uint32_t *)pParam->pCurValue));
-        break;
-    case PARAM_UINT64:
-        ptr = VarintEncoded(ptr, (*(uint64_t *)pParam->pCurValue));
-        break;
-
-    case PARAM_FLOAT:
-        ptr = PackFloat(ptr, *(float *)pParam->pCurValue);
-        break;
-    case PARAM_DOUBLE:
-        ptr = PackDouble(ptr, *(double *)pParam->pCurValue);
-        break;
-    case PARAM_STARING:
-    {
-        uint16_t length = strlen((char *)pParam->pCurValue) > pParam->length ? pParam->length : strlen((char *)pParam->pCurValue);
-        for (int i = 0; i < PARAM_STRING_SIZE; i++)
-        {
-            *ptr++ = (length >> (i * 8)) & 0xff;
-        }
-        memcpy(ptr, pParam->pCurValue,  length);
-        ptr += length;
-    }
-        break;
-    
-    default:
-        break;
-    }
-
-    return ptr;
-}
-
-static uint8_t *Decode(uint8_t *pbuf, uint8_t type, ParamInfo_t *pParam)
-{
-    uint8_t *ptr = pbuf;
-    uint64_t u64Val;
     int64_t s64Val;
-    float fVal;
-    double dVal;
 
-    switch (type)
+    if (isDecode)
     {
-    case PARAM_INT8:
-        if (pParam != NULL)
-            (*(int8_t *)pParam->pCurValue) = *(int8_t *)ptr;
-        ptr++;
-        // ptr = ZigzagDecode(ptr, &s64Val);
-        // (*(int8_t *)pParam->pCurValue) = (int8_t)s64Val;
-        break;
-    case PARAM_INT16:   
         ptr = ZigzagDecode(ptr, &s64Val);
-        if (pParam != NULL)
-            (*(int16_t *)pParam->pCurValue) = (int16_t)s64Val;
-        break;
-    case PARAM_INT32:
-        ptr = ZigzagDecode(ptr, &s64Val);
-        if (pParam != NULL)
-            (*(int32_t *)pParam->pCurValue) = (int32_t)s64Val;
-        break;
-    case PARAM_INT64:
-        ptr = ZigzagDecode(ptr, &s64Val);
-        if (pParam != NULL)
-            (*(int64_t *)pParam->pCurValue) = s64Val;
-        break;
-    case PARAM_UINT8:
-        if (pParam != NULL)
-            (*(uint8_t *)pParam->pCurValue) = *(uint8_t *)ptr;
-        ptr++;
-        // ptr = VarintDecode(ptr, &u64Val);
-        // (*(uint8_t *)pParam->pCurValue) = (uint8_t)u64Val;
-        break;
-    case PARAM_UINT16:
-        ptr = VarintDecode(ptr, &u64Val);
-        if (pParam != NULL)
-            (*(uint16_t *)pParam->pCurValue) = (uint16_t)u64Val;
-        break;
-    case PARAM_UINT32:
-        ptr = VarintDecode(ptr, &u64Val);
-        if (pParam != NULL)
-            (*(uint32_t *)pParam->pCurValue) = (uint32_t)u64Val;
-        break;
-    case PARAM_UINT64:
-        ptr = VarintDecode(ptr, &u64Val);
-        if (pParam != NULL)
-            (*(uint64_t *)pParam->pCurValue) = u64Val;
-        break;
-    case PARAM_FLOAT:
-        ptr = UnPackFloat(ptr, &fVal);
-        if (pParam != NULL)
-            (*(float *)pParam->pCurValue) = fVal;
-        break;
-    case PARAM_DOUBLE:
-        ptr = UnPackDouble(ptr, &dVal);
-        if (pParam != NULL)
-            (*(double *)pParam->pCurValue) = dVal;
-        break;
-    case PARAM_STARING:
+    }
+    else
     {
-        uint16_t length = 0;
-        for (int i = 0; i < PARAM_STRING_SIZE; i++)
-        {
-            length |= ((uint16_t)*ptr) << (i * 8);
-            ptr++;
-        }
-        if (pParam != NULL)
-            memcpy((void *)pParam->pCurValue, ptr, length);
-        ptr += length;
+        ptr = sMemUnPack(ptr, &s64Val, sizeof(int16_t));
     }
-        break;
-    
-    default:
-        break;
+
+    if (pVal != NULL)
+    {
+        *(int16_t *)pVal = (int16_t)s64Val;
     }
+
+    *pLength = sizeof(int16_t);
 
     return ptr;
 }
 
-/**
-  * @brief      将数据信息序列化为二进制数据流
-  * 
-  * @param[out] pbuf        序列化后的二进制数据流
-  * @param[in]  pParamTab   参数表
-  * @param[in]  num         参数表元素数目
-  * @return     序列化后的二进制数据流长度 
-  */
-uint32_t StreamToBin(uint8_t *pbuf, const ParamInfo_t *pParamTab, uint16_t num)
+static uint8_t *UnPackInt32(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
 {
-    uint8_t *ptr = pbuf;
-    
-#if ((PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_STRUCT) || (PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_ENCODED))
-    uint16_t cnt = num;
+    int64_t s64Val;
 
-    for (uint16_t id = 0; id < 0xfff && cnt > 0; id++)
+    if (isDecode)
     {
-        for (uint16_t j = 0; j < num; j++)
-        {
-            if (id == pParamTab[j].id)
-            {
-#if (PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_ENCODED)
-                ptr = Encoded(ptr, &pParamTab[j]);
-#else
-                ptr = StructPack(ptr, &pParamTab[j]);
-#endif
-                cnt--;
-                break;
-            }
-        }
+        ptr = ZigzagDecode(ptr, &s64Val);
     }
-#else
-    for (uint16_t i = 0; i < num; i++)
+    else
     {
-        ptr = PackTag(ptr, &pParamTab[i]);
-#if (PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_TAG_ENCODED)
-        ptr = Encoded(ptr, &pParamTab[i]);
-#else
-        ptr = StructPack(ptr, &pParamTab[i]);
-#endif
+        ptr = sMemUnPack(ptr, &s64Val, sizeof(int32_t));
     }
-#endif 
 
-    return ptr - pbuf;
+    if (pVal != NULL)
+    {
+        *(int32_t *)pVal = (int32_t)s64Val;
+    }
+
+    *pLength = sizeof(int32_t);
+
+    return ptr;
 }
 
-/**
-  * @brief      将二进制数据流反序列化为数据信息
-  * 
-  * @param[in]  pbuf      需要反序列化后的二进制数据流
-  * @param[in]  length    需要反序列化后的二进制数据流长度 
-  * @param[in,out]  pParamTab 参数表
-  * @param[in]  num       参数表元素数目 
-  */
-void StreamFromBin(uint8_t *pbuf, uint32_t length, ParamInfo_t *pParamTab, uint16_t num)
+static uint8_t *UnPackInt64(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
 {
-    uint8_t *ptr = pbuf;
-    uint16_t id;
-    uint8_t type;
+    int64_t s64Val;
 
-#if ((PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_STRUCT) || (PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_ENCODED))
-    uint16_t cnt = num;
+    if (isDecode)
+    {
+        ptr = ZigzagDecode(ptr, &s64Val);
+    }
+    else
+    {
+        ptr = sMemUnPack(ptr, &s64Val, sizeof(int64_t));
+    }
 
-    for (uint16_t id = 0; id < 0xfff && cnt > 0; id++)
+    if (pVal != NULL)
     {
-        for (uint16_t j = 0; j < num; j++)
-        {
-            if (id == pParamTab[j].id)
-            {
-#if (PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_ENCODED)
-                ptr = Decode(ptr, pParamTab[j].type, &pParamTab[j]);
-#else
-                ptr = StructUnPack(ptr, pParamTab[j].type, &pParamTab[j]);
-#endif
-                cnt--;
-            }
-        }
+        *(int64_t *)pVal = (int64_t)s64Val;
     }
-#else
-    while (ptr - pbuf < length)
+
+    *pLength = sizeof(int64_t);
+
+    return ptr;
+}
+
+
+
+static uint8_t *UnPackUint8(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    uint64_t u64Val;
+
+    if (isDecode)
     {
-        ptr = UnPackTag(ptr, &id, &type);
-#if (PARAM_SERIALIZE_MODE == PARAM_SERIALIZE_TAG_ENCODED)
-        ptr = Decode(ptr, type, FindTag(id, type, pParamTab, num));
-#else
-        ptr = StructUnPack(ptr, type, FindTag(id, type, pParamTab, num));
-#endif
-        
-        
+        u64Val = *(uint8_t *)ptr;
+        ptr++;
     }
-#endif 
+    else
+    {
+        ptr = uMemUnPack(ptr, &u64Val, sizeof(uint8_t));
+    }
+
+    if (pVal != NULL)
+    {
+        *(uint8_t *)pVal = (uint8_t)u64Val;
+    }
+
+    *pLength = sizeof(uint8_t);
+
+    return ptr;
+}
+
+static uint8_t *UnPackUint16(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    uint64_t u64Val;
+
+    if (isDecode)
+    {
+        ptr = VarintDecode(ptr, &u64Val);
+    }
+    else
+    {
+        ptr = uMemUnPack(ptr, &u64Val, sizeof(uint16_t));
+    }
+
+    if (pVal != NULL)
+    {
+        *(uint16_t *)pVal = (uint16_t)u64Val;
+    }
+
+    *pLength = sizeof(uint16_t);
+
+    return ptr;
+}
+
+static uint8_t *UnPackUint32(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    uint64_t u64Val;
+
+    if (isDecode)
+    {
+        ptr = VarintDecode(ptr, &u64Val);
+    }
+    else
+    {
+        ptr = uMemUnPack(ptr, &u64Val, sizeof(uint32_t));
+    }
+
+    if (pVal != NULL)
+    {
+        *(uint32_t *)pVal = (uint32_t)u64Val;
+    }
+
+    *pLength = sizeof(uint32_t);
+
+    return ptr;
+}
+
+static uint8_t *UnPackUint64(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    uint64_t u64Val;
+
+    if (isDecode)
+    {
+        ptr = VarintDecode(ptr, &u64Val);
+    }
+    else
+    {
+        ptr = uMemUnPack(ptr, &u64Val, sizeof(uint64_t));
+    }
+
+    if (pVal != NULL)
+    {
+        *(uint64_t *)pVal = (uint64_t)u64Val;
+    }
+
+    *pLength = sizeof(uint64_t);
+
+    return ptr;
+}
+
+static uint8_t *UnPackFloat(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    unFloat_t t;
+    t.data = 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        t.data |= ((uint32_t)(*ptr) << (i * 8));
+        ptr++;
+    }
+
+    if (pVal != NULL)
+    {
+        *(float *)pVal = t.fdata;
+    }
+
+    *pLength = 4;
+    
+    return ptr;
+}
+
+static uint8_t *UnPackDouble(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    unFloat_t t;
+    t.data = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+        t.data |= ((uint64_t)(*ptr) << (i * 8));
+        ptr++;
+    }
+
+    if (pVal != NULL)
+    {
+        *(double *)pVal = t.fdata;
+    }
+
+    *pLength = 8;
+
+    return ptr;
+}
+
+static uint8_t *UnPackString(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    uint16_t length = 0;
+
+    for (int i = 0; i < PARAM_STRING_SIZE; i++)
+    {
+        length |= ((uint16_t)*ptr) << (i * 8);
+        ptr++;
+    }
+
+    // if (isDecode)
+    {
+        *pLength = length;
+    }
+
+    if (pVal != NULL)
+    {
+        memcpy(pVal, ptr, length);
+    }
+    
+    ptr += length;
+    return ptr;
+}
+
+typedef uint8_t *(*UnPackFun_t)(uint8_t *ptr, void *pVal, uint16_t *pLength, uint8_t isDecode);
+
+UnPackFun_t unpackFunTable[]={
+    UnPackInt8,
+    UnPackInt16,
+    UnPackInt32,
+    UnPackInt64,
+    UnPackUint8,
+    UnPackUint16,
+    UnPackUint32,
+    UnPackUint64,
+    UnPackFloat,
+    UnPackDouble,
+    UnPackString
+};
+
+static uint8_t *UnPackData(uint8_t *pbuf, uint8_t type, void *pVal, uint16_t *pLength, uint8_t isDecode)
+{
+    return unpackFunTable[type](pbuf, pVal, pLength, isDecode);
+}
+
+uint8_t *UnPackParam(uint8_t *pBuf, ParamInfo_t *pParam, uint8_t isUseDecode, uint8_t opt)
+{
+    uint16_t length;
+    pBuf = UnPackData(pBuf, pParam->type, pParam->pCurValue, &pParam->length, isUseDecode);
+
+    if (opt & PARAM_PACK_NAME)
+    {
+        length = strlen(pBuf) >= PARAM_NAME_MAX_LENGTH ? PARAM_NAME_MAX_LENGTH - 1 : strlen(pBuf);
+        memcpy(pParam->pszName, pBuf, length + 1);
+        pBuf[length] = '\0';
+        pBuf += (length + 1);
+    }
+
+    if (opt & PARAM_PACK_ATTR)
+    {
+        pBuf = UnPackUint8(pBuf, &pParam->attr, &length, 0);
+    }
+
+    if (opt & PARAM_PACK_DEF_VAL)
+    {
+        pBuf = UnPackData(pBuf, pParam->type, pParam->pDefValue, &length, isUseDecode);
+    }
+
+    if ((opt & PARAM_PACK_MIN_VAL) && pParam->type != PARAM_STARING)
+    {
+        pBuf = UnPackData(pBuf, pParam->type, pParam->pMinValue, &length, isUseDecode);
+    }
+
+    if ((opt & PARAM_PACK_MAX_VAL) && pParam->type != PARAM_STARING)
+    {
+        pBuf = UnPackData(pBuf, pParam->type, pParam->pMaxValue, &length, isUseDecode);
+    }
+
+    return pBuf;
+}
+
+uint8_t *UnPackTagAndParam(uint8_t *pBuf, ParamInfo_t *pParam, uint8_t isUseDecode, uint8_t opt)
+{
+    pBuf = UnPackTag(pBuf, &pParam->id, &pParam->type);
+    pBuf = UnPackParam(pBuf, pParam, isUseDecode, opt);
+
+    return pBuf;
+}
+
+uint8_t *UnPackTagAndOptAndParam(uint8_t *pBuf, ParamInfo_t *pParam)
+{
+    uint8_t isUseDecode;
+    uint8_t opt;
+
+    pBuf = UnPackTag(pBuf, &pParam->id, &pParam->type);
+
+    isUseDecode = (*pBuf >> 7) & 0x01;
+    opt = (*pBuf & 0x7f);
+    pBuf++;
+
+    pBuf = UnPackParam(pBuf, pParam, isUseDecode, opt);
+
+    return pBuf;
 }

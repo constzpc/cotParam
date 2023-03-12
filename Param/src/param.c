@@ -19,317 +19,149 @@
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 #include "param.h"
+#include "param_cfg.h"
 #include "stream.h"
 #include <string.h>
 
-
-#define CASE_CHANGE(type) \
-case type:\
-{\
-    if ((*(type##_T *)pNewData) <= (*(type##_T *)pParamTable->pTab[i].pMaxValue) &&\
-        (*(type##_T *)pNewData) >= (*(type##_T *)pParamTable->pTab[i].pMinValue))\
-    {\
-        *(type##_T *)pParamTable->pTab[i].pCurValue = *(type##_T *)pNewData;\
-    }\
-}\
-break;
-
-#define CASE_CHECK(type) \
-case type:\
-{\
-    if ((*(type##_T *)pParamTable->pTab[i].pCurValue) > (*(type##_T *)pParamTable->pTab[i].pMaxValue) ||\
-        (*(type##_T *)pParamTable->pTab[i].pCurValue) < (*(type##_T *)pParamTable->pTab[i].pMinValue))\
-    {\
-        *(type##_T *)pParamTable->pTab[i].pCurValue = *(type##_T *)pParamTable->pTab[i].pDefValue;\
-    }\
-}\
-break;
-
-static struct
+/**
+  * @brief      将参数编码序列化，具备完整的解析信息
+  * 
+  * @note       序列化后的数据可支持跨设备传输解析
+  * @param[out] pBuf        序列化后的数据
+  * @param[in]  paramTable  需要进行序列化的参数表
+  * @param[in]  num         参数表元素数目
+  * @param[in]  opt         参数序列化选项 PARAM_PACK_NAME、PARAM_PACK_LENGTH 等, 可以将其他信息也进行序列化后传输解析
+  * @return     序列化后的数据大小 
+  */
+size_t Param_MultiSerialize(uint8_t *pBuf, const ParamInfo_t *paramTable, uint16_t num, uint8_t opt)
 {
-    const ParamInfo_t *pTab;
-    uint32_t num;
-} sg_tParamTable;
+    uint8_t *pPtr = pBuf;
 
-// int Param_Reset(ParamTable_t *pParamTable)
-// {
-//     if (pParamTable == NULL)
-//     {
-//         return -1;
-//     }
+    for (int i = 0; i < num; i++)
+    {
+        pPtr = PackTagAndOptAndParam(pPtr, &paramTable[i], 1, opt);
+    }
 
-//     for (int i = 0; i < pParamTable->num; i++)
-//     {
-//         if (pParamTable->pTab[i].attr & PARAM_ATTR_RESET)
-//         {
-//             memcpy(pParamTable->pTab[i].pCurValue, pParamTable->pTab[i].pDefValue, pParamTable->pTab[i].length);
-//         }
-//     }
-
-//     return 0;
-// }
-
-// /**
-//   * @brief      根据参数ID进行修改参数
-//   * 
-//   * @param[in]  pParamTable 参数表指针
-//   * @param[in]  id 参数ID
-//   * @param[in]  pNewData 新数据指针
-//   * @return     -1,失败 0,成功
-//   */
-// int Param_ModifyById(ParamTable_t *pParamTable, uint32_t id, const void *pNewData)
-// {
-//     if (pParamTable == NULL)
-//     {
-//         return -1;
-//     }
-
-//     for (int i = 0; i < pParamTable->num; i++)
-//     {
-//         if (pParamTable->pTab[i].id == id && (pParamTable->pTab[i].attr & PARAM_ATTR_WRITE))
-//         {
-//             switch (pParamTable->pTab[i].type)
-//             {
-//                 CASE_CHANGE(PARAM_INT8);
-//                 CASE_CHANGE(PARAM_INT16);
-//                 CASE_CHANGE(PARAM_INT32);
-//                 CASE_CHANGE(PARAM_INT64);
-//                 CASE_CHANGE(PARAM_UINT8);
-//                 CASE_CHANGE(PARAM_UINT16);
-//                 CASE_CHANGE(PARAM_UINT32);
-//                 CASE_CHANGE(PARAM_UINT64);
-//                 CASE_CHANGE(PARAM_FLOAT);
-//                 CASE_CHANGE(PARAM_DOUBLE);
-//             case PARAM_STARING:
-//                 if (strlen((char *)pNewData) < pParamTable->pTab[i].length)
-//                 {
-//                     strcpy((char *)pParamTable->pTab[i].pCurValue, (char *)pNewData);
-//                 }
-//                 break;
-//             default:
-//                 break;
-//             }
-//         }
-//     }
-
-//     return 0;
-// }
-
-// /**
-//   * @brief      根据参数名进行修改参数
-//   * 
-//   * @param[in]  pParamTable 参数表指针
-//   * @param[in]  pszName 参数名
-//   * @param[in]  pNewData 新数据指针
-//   * @return     -1,失败 0,成功
-//   */
-// int Param_ModifyByName(ParamTable_t *pParamTable, const char *pszName, const void *pNewData)
-// {
-
-//     for (int i = 0; i < pParamTable->num; i++)
-//     {
-//         if (strcmp(pParamTable->pTab[i].pszName, pszName) == 0 && (pParamTable->pTab[i].attr & PARAM_ATTR_WRITE))
-//         {
-//             switch (pParamTable->pTab[i].type)
-//             {
-//                 CASE_CHANGE(PARAM_INT8);
-//                 CASE_CHANGE(PARAM_INT16);
-//                 CASE_CHANGE(PARAM_INT32);
-//                 CASE_CHANGE(PARAM_INT64);
-//                 CASE_CHANGE(PARAM_UINT8);
-//                 CASE_CHANGE(PARAM_UINT16);
-//                 CASE_CHANGE(PARAM_UINT32);
-//                 CASE_CHANGE(PARAM_UINT64);
-//                 CASE_CHANGE(PARAM_FLOAT);
-//                 CASE_CHANGE(PARAM_DOUBLE);
-//             case PARAM_STARING:
-//                 if (strlen((char *)pNewData) < pParamTable->pTab[i].length)
-//                 {
-//                     strcpy((char *)pParamTable->pTab[i].pCurValue, (char *)pNewData);
-//                 }
-//                 break;
-//             default:
-//                 break;
-//             }
-//         }
-//     }
-
-//     return 0;
-// }
-
-// /**
-//   * @brief      将参数表序列化
-//   * 
-//   * @param[in]  pParamTable 参数表指针
-//   * @param[out] pBuf    序列化后的数据buf
-//   * @return     序列化后的数据buf长度
-//   */
-// size_t Param_Serialize(ParamTable_t *pParamTable, uint8_t *pBuf)
-// {
-//     size_t idx = 0;
-    
-//     for (int i = 0; i < pParamTable->num; i++)
-//     {
-//         memcpy(&pBuf[idx], pParamTable->pTab[i].pCurValue, pParamTable->pTab[i].length);
-//         idx += pParamTable->pTab[i].length;
-//     }
-    
-//     return idx;
-// }
-
-// /**
-//   * @brief      将序列化的数据转为参数表信息
-//   * 
-//   * @param[in]  pParamTable 参数表指针
-//   * @param[in] pBuf    序列化前的数据buf
-//   */
-// void Param_Parse(ParamTable_t *pParamTable, const uint8_t *pBuf)
-// {
-//     size_t idx = 0;
-    
-//     for (int i = 0; i < pParamTable->num; i++)
-//     {
-//         memcpy(pParamTable->pTab[i].pCurValue, &pBuf[idx], pParamTable->pTab[i].length);
-//         idx += pParamTable->pTab[i].length;
-//     }
-    
-//     for (int i = 0; i < pParamTable->num; i++)
-//     {
-//         switch (pParamTable->pTab[i].type)
-//         {
-//             CASE_CHECK(PARAM_INT8);
-//             CASE_CHECK(PARAM_INT16);
-//             CASE_CHECK(PARAM_INT32);
-//             CASE_CHECK(PARAM_INT64);
-//             CASE_CHECK(PARAM_UINT8);
-//             CASE_CHECK(PARAM_UINT16);
-//             CASE_CHECK(PARAM_UINT32);
-//             CASE_CHECK(PARAM_UINT64);
-//             CASE_CHECK(PARAM_FLOAT);
-//             CASE_CHECK(PARAM_DOUBLE);
-//         case PARAM_STARING:
-//             if (strlen((char *)pParamTable->pTab[i].pCurValue) >= pParamTable->pTab[i].length)
-//             {
-//                 strcpy((char *)pParamTable->pTab[i].pCurValue, (char *)pParamTable->pTab[i].pDefValue);
-//             }
-//             break;
-//         default:
-//             break;
-//         }
-//     }
-// }
-
-int Param_Init(const ParamInfo_t *paramTable, uint16_t num)
-{
-    sg_tParamTable.pTab = paramTable;
-    sg_tParamTable.num = num;
+    return pPtr - pBuf;
 }
 
-uint8_t sg_buf[200];
-uint32_t sg_saveLength;
+#if PARAM_PARSE_MAX_NUM != 0
 
-int Param_Load(void)
+static uint8_t sg_Buf[PARAM_PARSE_MAX_NUM * (PARAM_NAME_MAX_LENGTH + 32)];
+
+/**
+  * @brief      将数据反序列化得到参数表信息
+  * 
+  * @attention  必须是函数 Param_MultiSerialize 序列化后的数据
+  * @param[in]  pBuf        需要反序列化后的数据
+  * @param[in]  length      需要反序列化后的数据长度
+  * @param[out] paramTable  反序列化得到参数表信息
+  * @param[in]  num         参数表元素最大数目, 最大限制 PARAM_PARSE_MAX_NUM
+  * @return     反序列化得到参数表元素数目
+  */
+uint16_t Param_MultiParse(uint8_t *pBuf, size_t length, ParamInfo_t *paramTable, uint16_t num)
 {
-    if (sg_tParamTable.pTab == NULL)
+    uint8_t *pPtr = pBuf;
+    uint16_t idx = 0;
+
+    num = num < PARAM_PARSE_MAX_NUM ? num : PARAM_PARSE_MAX_NUM;
+
+    memset(paramTable, 0, num * sizeof(ParamInfo_t));
+
+    while (pPtr - pBuf < length && idx < num)
     {
-        return -1;
+        paramTable[idx].pszName = &sg_Buf[idx * (PARAM_NAME_MAX_LENGTH + 32)];
+        paramTable[idx].pCurValue = &sg_Buf[idx * (PARAM_NAME_MAX_LENGTH + 32) + PARAM_NAME_MAX_LENGTH];
+        paramTable[idx].pDefValue = &sg_Buf[idx * (PARAM_NAME_MAX_LENGTH + 32) + PARAM_NAME_MAX_LENGTH + 8];
+        paramTable[idx].pMinValue = &sg_Buf[idx * (PARAM_NAME_MAX_LENGTH + 32) + PARAM_NAME_MAX_LENGTH + 16];
+        paramTable[idx].pMaxValue = &sg_Buf[idx * (PARAM_NAME_MAX_LENGTH + 32) + PARAM_NAME_MAX_LENGTH + 24];
+        pPtr = UnPackTagAndOptAndParam(pPtr, &paramTable[idx]);
+        idx++;
     }
 
-    StreamFromBin(sg_buf, sg_saveLength, (ParamInfo_t *)sg_tParamTable.pTab, sg_tParamTable.num);
-
-    return 0;
+    return idx;
 }
 
-int Param_Save(void)
+#endif
+
+/**
+  * @brief      将参数编码序列化，不具备完整的解析信息
+  * 
+  * @attention  序列化时只对部分数据序列化，因此序列化后的数据更适合本机储存在储存芯片中，不适合跨设备传输
+  * @param      pBuf        序列化后的数据
+  * @param[in]  paramTable  需要进行序列化的参数表
+  * @param[in]  num         参数表元素数目
+  * @param      isAddKey    是否采用键值对（能向下兼容，即使删除一组参数也能正常反序列化）
+  * @param      isUseEncoded 是否采用编码压缩（能够压缩数据，每个数值越小压缩效果越好）
+  * @return     序列化后的数据大小
+  */
+size_t Param_Serialize(uint8_t *pBuf, const ParamInfo_t *paramTable, uint16_t num, uint8_t isAddKey, uint8_t isUseEncoded)
 {
-    if (sg_tParamTable.pTab == NULL)
+    uint8_t *pPtr = pBuf;
+
+    if (isAddKey)
     {
-        return -1;
+        for (int i = 0; i < num; i++)
+        {
+            pPtr = PackTagAndParam(pPtr, &paramTable[i], isUseEncoded, 0);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < num; i++)
+        {
+            pPtr = PackParam(pPtr, &paramTable[i], isUseEncoded, 0);
+        }
     }
 
-    sg_saveLength = StreamToBin(sg_buf, sg_tParamTable.pTab, sg_tParamTable.num);
-
-    return 0;
-}
-
-static uint8_t *MemPack(uint8_t *ptr, uint64_t val, uint8_t size)
-{
-    for (int i = 0; i < size; i++)
-    {
-        *ptr++ = val >> (i * 8);
-    }
-
-    return ptr;
-}
-
-static uint8_t *Pack(ParamInfo_t *pParam, uint8_t *pBuf, uint8_t opt)
-{
-    pBuf = MemPack(pBuf, ( (pParam->id << 4) | pParam->type), 2);
-
-    if (opt & PARAM_PACK_NAME)
-    {
-        memcpy(pBuf, pParam->pszName, strlen(pParam->pszName) + 1);
-        pBuf += (strlen(pParam->pszName) + 1);
-    }
-
-    if (opt & PARAM_PACK_LENGTH)
-    {
-        pBuf = MemPack(pBuf, pParam->length, 2);
-    }
-
-    if (opt & PARAM_PACK_ATTR)
-    {
-        pBuf = MemPack(pBuf, pParam->attr, 1);
-    }
-
-    if (opt & PARAM_PACK_DEF_VAL)
-    {
-        pBuf = MemPack(pBuf, pParam->pDefValue, pParam->pCurValue);
-    }
-
-    if (opt & PARAM_PACK_MIN_VAL)
-    {
-        pBuf = MemPack(pBuf, pParam->attr, 1);
-    }
-
-    if (opt & PARAM_PACK_MAX_VAL)
-    {
-        pBuf = MemPack(pBuf, pParam->attr, 1);
-    }
+    return pPtr - pBuf;
 }
 
 /**
-  * @brief      按照序列化读取指定参数
+  * @brief      将数据反序列化得到参数表信息
   * 
-  * @param      id 
-  * @param      pBuf 
-  * @param      opt 
-  * @return     size_t 
+  * @attention  反序列化时需要定义和序列化前一样的完整参数表，才能完成解析，即函数 Param_Serialize 序列化后的数据
+  * @param[in]  pBuf        需要反序列化后的数据
+  * @param[in]  length      需要反序列化后的数据长度
+  * @param[out] paramTable  反序列化得到参数表信息
+  * @param[in]  num         参数表元素数目
+  * @param      isHasKey    序列化的时候是否了采用键值对
+  * @param      isUseDecode 序列化的时候是否了编码压缩
+  * @return     参数表元素数目 
   */
-size_t Param_Read(uint16_t id, uint8_t *pBuf, uint8_t opt)
+uint16_t Param_Parse(uint8_t *pBuf, size_t length, ParamInfo_t *paramTable, uint16_t num, uint8_t isHasKey, uint8_t isUseDecode)
 {
-    uint8_t *ptr = pBuf;
-    
-    for (int i = 0; i < sg_tParamTable.num; i++)
+    uint8_t *pPtr = pBuf;
+    uint8_t buf[100];
+    ParamInfo_t tParam;
+
+    if (isHasKey)
     {
-        if (sg_tParamTable.pTab[i].id == id)
+        tParam.pCurValue = &buf[0];
+
+        while (pPtr - pBuf < length)
         {
-            ptr = Pack(&sg_tParamTable.pTab[i], ptr, opt);
+            pPtr = UnPackTagAndParam(pPtr, &tParam, isUseDecode, 0);
+
+            for (int i = 0; i < num; i++)
+            {
+                if (tParam.id == paramTable[i].id && tParam.type == paramTable[i].type)
+                {
+                    memset(paramTable[i].pCurValue, 0, paramTable[i].length);
+                    memcpy(paramTable[i].pCurValue, tParam.pCurValue, tParam.length);
+                    break;
+                }
+            }
         }
     }
-    
-    return ptr - pBuf;
-}
-
-size_t Param_Reads(uint16_t id, uint16_t num, uint8_t *pBuf, uint8_t opt)
-{
-    size_t pos = 0;
-
-    for (int i = id; i < sg_tParamTable.num && i < id + num; i++)
+    else
     {
-        pos += Param_Read(i, &pBuf[pos], opt);
+        for (int i = 0; i < num; i++)
+        {
+            UnPackParam(pBuf, &paramTable[i], isUseDecode, 0);
+        }
     }
 
-    return pos;
+    return num;
 }
 
