@@ -149,6 +149,10 @@ int main()
     printf("\nParse:\n");
     ShowAllParam(sg_ParamTable, sizeof(sg_ParamTable) / sizeof(ParamInfo_t));
     
+    /* 使用完整信息接口序列化数据（无序列化选项，可修改看效果） */
+    length = Param_MultiSerialize(sg_buf, sg_ParamTable, sizeof(sg_ParamTable) / sizeof(ParamInfo_t), 0); // PARAM_PACK_ATTR | PARAM_PACK_NAME
+    HEX_PRINTF("\nMultiSerialize", sg_buf, length);
+
     /* 使用完整信息接口序列化数据（序列化选项拉满，可修改看效果） */
     length = Param_MultiSerialize(sg_buf, sg_ParamTable, sizeof(sg_ParamTable) / sizeof(ParamInfo_t), PARAM_PACK_ALL); // PARAM_PACK_ATTR | PARAM_PACK_NAME
     HEX_PRINTF("\nMultiSerialize", sg_buf, length);
