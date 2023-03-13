@@ -14,56 +14,46 @@ typedef union
     double   fdata;
 }unDouble_t;
 
-static uint8_t *VarintEncoded(uint8_t *pbuf, uint64_t val)
+static uint8_t *VarintEncoded(uint8_t *ptr, uint64_t val)
 {
-    uint64_t tmpVal = val;
-    uint8_t *ptmpPtr = pbuf;
-
-    do
+    while (val >= 0x80)
     {
-        *ptmpPtr++ = (uint8_t)tmpVal | 0x80;
-        tmpVal >>= 7;
-    } while (tmpVal >= 0x80);
-
-    if (val >= 0x80)
-    {
-        *ptmpPtr++ = (uint8_t)tmpVal;
-    }
-    else
-    {
-        pbuf[0] &= ~0x80;
-    }
+        *ptr++ = (uint8_t)val | 0x80;
+        val >>= 7;
+    } 
     
-    return ptmpPtr;
+    *ptr++ = (uint8_t)val;
+    
+    return ptr;
 }
 
-static uint8_t *VarintDecode(uint8_t *pbuf, uint64_t *pVal)
+static uint8_t *VarintDecode(uint8_t *ptr, uint64_t *pVal)
 {
     uint8_t offset = 0;
     uint64_t result = 0;
     
     do
     {
-        result |= (uint64_t)((*pbuf) & ~0x80) << offset;
+        result |= (uint64_t)((*ptr) & ~0x80) << offset;
         offset += 7;
-    } while (((*pbuf++) & 0x80) != 0);
+    } while (((*ptr++) & 0x80) != 0);
     
     *pVal = result;
     
-    return pbuf;
+    return ptr;
 }
 
-static uint8_t *ZigzagEncoded(uint8_t *pbuf, int64_t val)
+static uint8_t *ZigzagEncoded(uint8_t *ptr, int64_t val)
 {
-    return VarintEncoded(pbuf, (uint64_t)((val<<1)^(val>>63)));
+    return VarintEncoded(ptr, (uint64_t)((val<<1)^(val>>63)));
 }
 
-static uint8_t *ZigzagDecode(uint8_t *pbuf, int64_t *pVal)
+static uint8_t *ZigzagDecode(uint8_t *ptr, int64_t *pVal)
 {
     uint64_t u64val;
-    uint8_t *ptr = VarintDecode(pbuf, &u64val);
     
-    *pVal = (int64_t)((u64val>>1) ^ - (u64val&1));
+    ptr = VarintDecode(ptr, &u64val);
+    *pVal = (int64_t)((u64val >> 1) ^ - (u64val&1));
 
     return ptr;
 }
