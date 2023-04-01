@@ -15,7 +15,7 @@ AIM_NAME:=demo
 
 .PHONY:all
 all:
-	${GCC} ${INC} ${SRC} -o ${CURR_DIR_PATH}/${AIM_NAME}
+	${GCC} ${INC} ${SRC} -o ${CURR_DIR_PATH}/${AIM_NAME} -std=c99
 
 .PHONY:clean
 clean:

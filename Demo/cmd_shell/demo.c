@@ -2,24 +2,24 @@
 #include "param.h"
 #include <stdio.h>
 
-PARAM_DEFINE (test, PARAM_INT16, 10, -100, 100);
-PARAM_DEFINE (test_2, PARAM_UINT16, 20, 0, 100);
-PARAM_DEFINE (test_3, PARAM_DOUBLE, 3.15, -10, 10);
+PARAM_DEFINE_DAT (test, PARAM_INT16, 10, -100, 100);
+PARAM_DEFINE_DAT (test_2, PARAM_UINT16, 20, 0, 100);
+PARAM_DEFINE_DAT (test_3, PARAM_DOUBLE, 3.15, -10, 10);
 PARAM_DEFINE_STR (test_str, 10, "abcdef");
-PARAM_DEFINE (test_4, PARAM_INT8, 8, -10, 10);
-PARAM_DEFINE (test_5, PARAM_UINT32, 620, 500, 10000);
-PARAM_DEFINE (test_6, PARAM_UINT8, 4, 5, 100);
-PARAM_DEFINE (test_7, PARAM_INT64, 5, -542, 5450);
+PARAM_DEFINE_DAT (test_4, PARAM_INT8, 8, -10, 10);
+PARAM_DEFINE_DAT (test_5, PARAM_UINT32, 620, 500, 10000);
+PARAM_DEFINE_DAT (test_6, PARAM_UINT8, 4, 5, 100);
+PARAM_DEFINE_DAT (test_7, PARAM_INT64, 5, -542, 5450);
 
 ParamInfo_t sg_ParamTable[] = {
-    PARAM_REG(1, test, PARAM_INT16, PARAM_ATTR_ALL),
-    PARAM_REG(2, test_2, PARAM_UINT16, PARAM_ATTR_READ),
-    PARAM_REG(3, test_3, PARAM_DOUBLE, PARAM_ATTR_READ | PARAM_ATTR_WRITE),
-    PARAM_STR_REG(4, test_str, PARAM_ATTR_READ | PARAM_ATTR_WRITE),
-    PARAM_REG(5, test_4, PARAM_INT8, PARAM_ATTR_READ),
-    PARAM_REG(6, test_5, PARAM_UINT32, PARAM_ATTR_READ),
-    PARAM_REG(7, test_6, PARAM_UINT8, PARAM_ATTR_READ),
-    PARAM_REG(8, test_7, PARAM_INT64, PARAM_ATTR_WRITE),
+    PARAM_ITEM_DAT(1, test, PARAM_ATTR_ALL),
+    PARAM_ITEM_DAT(2, test_2, PARAM_ATTR_READ),
+    PARAM_ITEM_DAT(3, test_3, PARAM_ATTR_READ | PARAM_ATTR_WRITE),
+    PARAM_ITEM_STR(4, test_str, PARAM_ATTR_READ | PARAM_ATTR_WRITE),
+    PARAM_ITEM_DAT(5, test_4, PARAM_ATTR_READ),
+    PARAM_ITEM_DAT(6, test_5, PARAM_ATTR_READ),
+    PARAM_ITEM_DAT(7, test_6, PARAM_ATTR_READ),
+    PARAM_ITEM_DAT(8, test_7, PARAM_ATTR_WRITE),
 };
 
 #define ATTR(x)   ((x & (PARAM_ATTR_READ | PARAM_ATTR_WRITE)) == (PARAM_ATTR_READ | PARAM_ATTR_WRITE) ? \
@@ -53,7 +53,7 @@ void ShowAllParam(const ParamInfo_t *paramTable, uint16_t num)
                 VIEW(PARAM_INT32, paramTable[i].pMinValue), VIEW(PARAM_INT32, paramTable[i].pMaxValue));
             break;
         case PARAM_INT64:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10ld %-10ld %-10ld %-10ld\n", 
+            printf(" %-4d   %-15s %-10s %-6d %-8s %-10lld %-10lld %-10lld %-10lld\n", 
                 paramTable[i].id, paramTable[i].pszName, "int64_t", paramTable[i].length, ATTR(paramTable[i].attr),
                 VIEW(PARAM_INT64, paramTable[i].pCurValue), VIEW(PARAM_INT64, paramTable[i].pDefValue),
                 VIEW(PARAM_INT64, paramTable[i].pMinValue), VIEW(PARAM_INT64, paramTable[i].pMaxValue));
@@ -77,7 +77,7 @@ void ShowAllParam(const ParamInfo_t *paramTable, uint16_t num)
                 VIEW(PARAM_UINT32, paramTable[i].pMinValue), VIEW(PARAM_UINT32, paramTable[i].pMaxValue));
             break;
         case PARAM_UINT64:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10lu %-10lu %-10lu %-10lu\n", 
+            printf(" %-4d   %-15s %-10s %-6d %-8s %-10llu %-10llu %-10llu %-10llu\n", 
                 paramTable[i].id, paramTable[i].pszName, "uint64_t", paramTable[i].length, ATTR(paramTable[i].attr),
                 VIEW(PARAM_UINT64, paramTable[i].pCurValue), VIEW(PARAM_UINT64, paramTable[i].pDefValue),
                 VIEW(PARAM_UINT64, paramTable[i].pMinValue), VIEW(PARAM_UINT64, paramTable[i].pMaxValue));

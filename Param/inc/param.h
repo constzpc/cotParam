@@ -24,7 +24,7 @@
 
 
 /**
-  * @brief  定义参数
+  * @brief  定义普通参数
   * 
   * @param  name 参数名（变量名）
   * @param  type 参数类型 @enum ParamType_e 取值
@@ -32,8 +32,8 @@
   * @param  minVal 最小值
   * @param  maxVal 最大值
   */
-#define PARAM_DEFINE(name, type, defVal, minVal, maxVal)   \
-    typedef type##_T type##_##name##_T;  \
+#define PARAM_DEFINE_DAT(name, type, defVal, minVal, maxVal)   \
+    enum {TYPE_##name = type};\
     type##_T name = defVal;\
     const type##_T def_##name = defVal;\
     const type##_T min_##name = minVal;\
@@ -51,13 +51,14 @@
     const char def_##name[] = {defVal};
 
 /**
-  * @brief  参数注册
+  * @brief  普通参数注册
   * 
   * @param  id   参数唯一 ID
   * @param  name 参数名（变量名）
-  * @param  type 参数类型 @enum ParamType_e 取值
+  * @param  attr 参数属性
   */
-#define PARAM_REG(id, name, type, attr)  { #name, id, type, sizeof(name), attr, &name, (void *)&def_##name, (void *)&min_##name, (void *)&max_##name }
+#define PARAM_ITEM_DAT(id, name, attr)  { #name, id, TYPE_##name, sizeof(name), attr, &name, \
+                                        (void *)&def_##name, (void *)&min_##name, (void *)&max_##name }
 
 /**
   * @brief  字符串参数注册
@@ -65,7 +66,8 @@
   * @param  id   参数唯一 ID
   * @param  name 参数名（变量名）
   */
-#define PARAM_STR_REG(id, name, attr)  { #name, id, PARAM_STARING, sizeof(name), attr, name, (void *)def_##name, NULL, NULL }
+#define PARAM_ITEM_STR(id, name, attr)  { #name, id, PARAM_STARING, sizeof(name), attr, name, \
+                                        (void *)def_##name, NULL, NULL }
 
 /**
   * @brief  参数声明
@@ -73,12 +75,7 @@
   * @param  name 参数名（变量名）
   * @param  type 参数类型 @enum ParamType_e 取值
   */
-#define PARAM_EXTERN(name, type)  \
-    typedef type##_T type##_##name##_T;  \
-    extern type##_T name;\
-    extern type##_T def_##name;\
-    extern type##_T min_##name;\
-    extern type##_T max_##name;
+#define PARAM_EXTERN_DAT(name, type) extern type##_T name;
 
 /**
   * @brief  字符串参数声明
@@ -86,9 +83,7 @@
   * @param  name 参数名（变量名）
   * @param  length 字符串预留最大长度
   */
-#define PARAM_STR_EXTERN(name, length)  \
-    extern char name[length];\
-    extern char def_##name[];
+#define PARAM_EXTERN_STR(name, length) extern char name[length];
 
 
 extern size_t Param_MultiSerialize(uint8_t *pBuf, const ParamInfo_t *paramTable, uint16_t num, uint8_t opt);
