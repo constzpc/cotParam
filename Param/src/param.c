@@ -28,7 +28,7 @@ typedef union
     uint64_t u64val;
     int64_t s64val;
     double fVal;
-    char str[PARAM_STRING_MAX_LENGTH];
+    char str[PARAM_STRING_MAX_LENGTH + 2];
 } Value_u;
 
 static uint8_t *SerializeUint(uint8_t *ptr, uint64_t value, uint8_t len)
@@ -394,7 +394,7 @@ const ParamInfo_t *Param_FindParamByParamPtr(ParamManager_t *manager, const void
 
 
 // 验证参数是否在指定范围内
-int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
+static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
 {
     if (!(param->attr & PARAM_ATTR_RANGE))
     {
@@ -406,125 +406,125 @@ int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
     case PARAM_INT8:
         if (pval->s64val < *param->unMinValuePtr.pInt8)
         {
-            return -1;
+            return 1;
         }
         else if (pval->s64val > *param->unMaxValuePtr.pInt8)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_INT16:
         if (pval->s64val < *param->unMinValuePtr.pInt16)
         {
-            return -1;
+            return 1;
         }
         else if (pval->s64val > *param->unMaxValuePtr.pInt16)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_INT32:
         if (pval->s64val < *param->unMinValuePtr.pInt32)
         {
-            return -1;
+            return 1;
         }
         else if (pval->s64val > *param->unMaxValuePtr.pInt32)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_INT64:
         if (pval->s64val < *param->unMinValuePtr.pInt64)
         {
-            return -1;
+            return 1;
         }
         else if (pval->s64val > *param->unMaxValuePtr.pInt64)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_UINT8:
         if (pval->u64val < *param->unMinValuePtr.pUint8)
         {
-            return -1;
+            return 1;
         }
         else if (pval->u64val > *param->unMaxValuePtr.pUint8)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_UINT16:
         if (pval->u64val < *param->unMinValuePtr.pUint16)
         {
-            return -1;
+            return 1;
         }
         else if (pval->u64val > *param->unMaxValuePtr.pUint16)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_UINT32:
         if (pval->u64val < *param->unMinValuePtr.pUint32)
         {
-            return -1;
+            return 1;
         }
         else if (pval->u64val > *param->unMaxValuePtr.pUint32)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_UINT64:
         if (pval->u64val < *param->unMinValuePtr.pUint64)
         {
-            return -1;
+            return 1;
         }
         else if (pval->u64val > *param->unMaxValuePtr.pUint64)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_FLOAT:
         if (pval->fVal < *param->unMinValuePtr.pFloat)
         {
-            return -1;
+            return 1;
         }
         else if (pval->fVal > *param->unMaxValuePtr.pFloat)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_DOUBLE:
         if (pval->fVal < *param->unMinValuePtr.pDouble)
         {
-            return -1;
+            return 1;
         }
         else if (pval->fVal > *param->unMaxValuePtr.pDouble)
         {
-            return 1;
+            return 2;
         }
         break;
 
     case PARAM_STRING:
         if (strlen(pval->str) < *param->unMinValuePtr.pStringLength)
         {
-            return -1;
+            return 1;
         }
         else if (strlen(pval->str) > *param->unMaxValuePtr.pStringLength)
         {
-            return 1;
+            return 2;
         }
         break;
     default:
-        return -2;
+        return -1;
     }
 
     return 0;
@@ -577,23 +577,64 @@ static int ValidateRangeByVoid(const ParamInfo_t *param, const void *pval)
         break;
 
     case PARAM_STRING:
-        memcpy(uValue.str, pval, strlen(pval) > PARAM_STRING_MAX_LENGTH ? PARAM_STRING_MAX_LENGTH - 1 : strlen(pval));
+        memcpy(uValue.str, pval, strlen(pval) > PARAM_STRING_MAX_LENGTH ? PARAM_STRING_MAX_LENGTH + 2 : strlen(pval) + 1);
+        uValue.str[PARAM_STRING_MAX_LENGTH + 2] = '\0';
         break;
     default:
-        return -2;
+        return -1;
     }
 
     return ValidateRange(param, &uValue);
 }
 
 /**
+  * @brief      检查参数最新值的范围并对超出范围时进行处理
+  * 
+  * @param      param 参数信息
+  * @param      opt   超出范围的处理选项：
+  *                   @arg PARAM_NONE, 参数不变, 即不做处理
+  *                   @arg PARAM_DEF,  参数恢复默认
+  *                   @arg PARAM_MIN_MAX, 参数小于最小值则为最小值, 参数大于最大值则为最大值; 但对字符串类型参数该选项无效, 即不做处理
+  * @return     0,正常; 1,参数小于最小值(字符串长度小于最小限制长度); 2,参数大于最大值(字符串长度大于最大限制长度); <0,错误
+  */
+int Param_CheckRange(const ParamInfo_t *param, uint8_t opt)
+{
+    int ret;
+
+    if (param == NULL)
+    {
+        return -1; // 参数验证失败
+    }
+
+    ret = ValidateRangeByVoid(param, param->unCurValuePtr.pVoid);
+
+    if (ret != 0)
+    {
+        if (opt == PARAM_DEF)
+        {
+            ResetParamValue(param);
+        }
+        else if (opt == PARAM_MIN_MAX)
+        {
+            ret == 1 ? ResetParamMinValue(param) : ResetParamMaxValue(param);
+        }
+
+        return ret;
+    }
+
+    return 0;
+}
+
+/**
   * @brief      设置新的参数值
   *
-  * @attention  字符串类型参数的 PARAM_MIN_MAX 的处理选项和 PARAM_NONE 一样
   * @param      param   参数信息
   * @param      value   新的参数值
-  * @param      opt     超出范围的处理：PARAM_NONE,参数不变；PARAM_DEF,参数恢复默认；PARAM_MIN_MAX,参数取最大最小值
-  * @return     0,修改成功；-1,新的字符串长度小于最小限制值；1,新的字符串长度大于最大限制值，其他，错误
+  * @param      opt   超出范围的处理选项：
+  *                   @arg PARAM_NONE, 参数不变, 即不做处理
+  *                   @arg PARAM_DEF,  参数恢复默认
+  *                   @arg PARAM_MIN_MAX, 参数小于最小值则为最小值, 参数大于最大值则为最大值; 但对字符串类型参数该选项无效, 即不做处理
+  * @return     0,正常; 1,参数小于最小值(字符串长度小于最小限制长度); 2,参数大于最大值(字符串长度大于最大限制长度); <0,错误
   */
 int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt)
 {
@@ -601,7 +642,7 @@ int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt)
 
     if (param == NULL)
     {
-        return -2; // 参数验证失败
+        return -1;
     }
 
     ret = ValidateRangeByVoid(param, value);
@@ -614,7 +655,7 @@ int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt)
         }
         else if (opt == PARAM_MIN_MAX)
         {
-            ret == -1 ? ResetParamMinValue(param) : ResetParamMaxValue(param);
+            ret == 1 ? ResetParamMinValue(param) : ResetParamMaxValue(param);
         }
 
         return ret;

@@ -308,29 +308,67 @@
 #define _PARAM_STR_PARAM_MIN_MAX(name, def, min_or_max)         (0)
 
 /**
+  * @brief 使用 PARAM_DEFINE_DAT_RANGE 定义的数值类型参数可以通过该宏进行最新值的范围校验
+  * 
+  * @attention  使用该宏请确保在头文件已经使用宏 PARAM_EXTERN_DAT 声明
+  * @param  name  参数名
+  * @param  opt   超出范围的处理选项：
+  *                   @arg PARAM_NONE, 参数不变, 即不做处理
+  *                   @arg PARAM_DEF,  参数恢复默认
+  *                   @arg PARAM_MIN_MAX, 参数小于最小值则为最小值, 参数大于最大值则为最大值; 但对字符串类型参数该选项无效, 即不做处理
+  * @return 0,正常; 1,参数小于最小值; 2,参数大于最大值
+  */
+#define PARAM_DAT_CHECK_RANGE(name, opt)  \
+            (PARAM_DAT_CUR_VALUE(name) < PARAM_DAT_MIN_VALUE(name) ? (_PARAM_DAT_##opt(name, def, min), 1) : \
+             PARAM_DAT_CUR_VALUE(name) > PARAM_DAT_MAX_VALUE(name) ? (_PARAM_DAT_##opt(name, def, max), 2) : 0)
+
+/**
+  * @brief 使用 PARAM_DEFINE_STR_RANGE 定义的字符串类型参数可以通过该宏进行长度的校验
+  * 
+  * @attention  使用该宏请确保在头文件已经使用宏 PARAM_EXTERN_STR 声明
+  * @param  name  参数名
+  * @param  opt   超出范围的处理选项：
+  *                   @arg PARAM_NONE, 参数不变, 即不做处理
+  *                   @arg PARAM_DEF,  参数恢复默认
+  *                   @arg PARAM_MIN_MAX, 参数小于最小值则为最小值, 参数大于最大值则为最大值; 但对字符串类型参数该选项无效, 即不做处理
+  * @return 0,正常; 1,字符串长度小于最小限制长度; 2,字符串长度大于最大限制长度
+  */
+#define PARAM_STR_CHECK_RANGE(name, opt)    \
+            (strlen(PARAM_STR_CUR_VALUE(name)) < PARAM_STR_MIN_LENGTH(name) ? (_PARAM_STR_##opt(name, def, min), 1) : \
+             strlen(PARAM_STR_CUR_VALUE(name)) > PARAM_STR_MAX_LENGTH(name) ? (_PARAM_STR_##opt(name, def, max), 2) : 0)
+
+/**
   * @brief 使用 PARAM_DEFINE_DAT_RANGE 定义的参数可以通过该宏修改
   * 
+  * @attention  使用该宏请确保在头文件已经使用宏 PARAM_EXTERN_DAT 声明
   * @param  name  参数名
   * @param  val   参数新的值
-  * @param  opt   超出范围的处理：PARAM_NONE,参数不变；PARAM_DEF,参数恢复默认；PARAM_MIN_MAX,参数取最大最小值
-  * @return 0,修改成功；-1,新的值小于最小限制值；1,新的值大于最大限制值
+  * @param  opt   超出范围的处理选项：
+  *                   @arg PARAM_NONE, 参数不变, 即不做处理
+  *                   @arg PARAM_DEF,  参数恢复默认
+  *                   @arg PARAM_MIN_MAX, 参数小于最小值则为最小值, 参数大于最大值则为最大值
+  * @return 0,正常; 1,参数小于最小值; 2,参数大于最大值
   */
 #define PARAM_DAT_SET_NEW_VALUE(name, val, opt)  \
-            (val < PARAM_DAT_MIN_VALUE(name) ? (_PARAM_DAT_##opt(name, def, min), -1) : \
-             val > PARAM_DAT_MAX_VALUE(name) ? (_PARAM_DAT_##opt(name, def, max), 1) : \
+            (val < PARAM_DAT_MIN_VALUE(name) ? (_PARAM_DAT_##opt(name, def, min), 1) : \
+             val > PARAM_DAT_MAX_VALUE(name) ? (_PARAM_DAT_##opt(name, def, max), 2) : \
                 (PARAM_DAT_CUR_VALUE(name) = val, 0))
 
 /**
   * @brief 使用 PARAM_DEFINE_STR_RANGE 定义的参数可以通过该宏修改
   * 
+  * @attention  使用该宏请确保在头文件已经使用宏 PARAM_EXTERN_STR 声明
   * @param  name  参数名
   * @param  val   参数新的字符串
-  * @param  opt   超出范围的处理：PARAM_NONE 或 PARAM_MIN_MAX,, 参数不变；PARAM_DEF,参数恢复默认
-  * @return 0,修改成功；-1,新的字符串长度小于最小限制值；1,新的字符串长度大于最大限制值
+  * @param  opt   超出范围的处理选项：
+  *                   @arg PARAM_NONE, 参数不变, 即不做处理
+  *                   @arg PARAM_DEF,  参数恢复默认
+  *                   @arg PARAM_MIN_MAX, 该选项无效, 参数不变, 即不做处理
+  * @return 0,正常; 1,字符串长度小于最小限制长度; 2,字符串长度大于最大限制长度
   */
 #define PARAM_STR_SET_NEW_VALUE(name, str, opt)    \
-            (strlen(str) < PARAM_STR_MIN_LENGTH(name) ? (_PARAM_STR_##opt(name, def, min), -1) : \
-             strlen(str) > PARAM_STR_MAX_LENGTH(name) ? (_PARAM_STR_##opt(name, def, max), 1) : \
+            (strlen(str) < PARAM_STR_MIN_LENGTH(name) ? (_PARAM_STR_##opt(name, def, min), 1) : \
+             strlen(str) > PARAM_STR_MAX_LENGTH(name) ? (_PARAM_STR_##opt(name, def, max), 2) : \
                 (strcpy(PARAM_STR_CUR_VALUE(name), str), 0))
 
 // 得到参数表的元素数目
@@ -348,6 +386,8 @@ extern ParamInfo_t *Param_IterateList(ParamManager_t *manager, size_t *psIdx);
 extern const ParamInfo_t *Param_FindParamByName(ParamManager_t *manager, const char *pszName);
 extern const ParamInfo_t *Param_FindParamByID(ParamManager_t* manager, uint16_t id);
 extern const ParamInfo_t *Param_FindParamByParamPtr(ParamManager_t* manager, const void *curParamPtr);
+
+extern int Param_CheckRange(const ParamInfo_t *param, uint8_t opt);
 
 extern int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt);
 extern bool Param_ResetDefaultValue(const ParamInfo_t *param);
