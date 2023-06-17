@@ -444,7 +444,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_INT64:
         if (pval->s64val < *param->unMinValuePtr.pInt64)
         {
@@ -455,7 +455,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
-
+#endif
     case PARAM_UINT8:
         if (pval->u64val < *param->unMinValuePtr.pUint8)
         {
@@ -488,7 +488,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_UINT64:
         if (pval->u64val < *param->unMinValuePtr.pUint64)
         {
@@ -499,7 +499,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
-
+#endif
     case PARAM_FLOAT:
         if (pval->fVal < *param->unMinValuePtr.pFloat)
         {
@@ -510,7 +510,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_DOUBLE:
         if (pval->fVal < *param->unMinValuePtr.pDouble)
         {
@@ -521,6 +521,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
+#endif
 #if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         if (strlen(pval->str) < *param->unMinValuePtr.pStringLength)
@@ -557,11 +558,11 @@ static int ValidateRangeByVoid(const ParamInfo_t *param, const void *pval)
     case PARAM_INT32:
         uValue.s64val = *(PARAM_INT32_T *)pval;
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_INT64:
         uValue.s64val = *(PARAM_INT64_T *)pval;
         break;
-
+#endif
     case PARAM_UINT8:
         uValue.s64val = *(PARAM_UINT8_T *)pval;
         break;
@@ -573,18 +574,19 @@ static int ValidateRangeByVoid(const ParamInfo_t *param, const void *pval)
     case PARAM_UINT32:
         uValue.s64val = *(PARAM_UINT32_T *)pval;
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_UINT64:
         uValue.s64val = *(PARAM_UINT64_T *)pval;
         break;
-
+#endif
     case PARAM_FLOAT:
         uValue.fVal = *(PARAM_FLOAT_T *)pval;
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_DOUBLE:
         uValue.fVal = *(PARAM_DOUBLE_T *)pval;
         break;
+#endif
 #if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         memcpy(uValue.str, pval, strlen(pval) > PARAM_STRING_MAX_LENGTH ? PARAM_STRING_MAX_LENGTH + 2 : strlen(pval) + 1);
@@ -752,7 +754,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
         *param->unCurValuePtr.pInt32 = (PARAM_INT32_T)val;
     }
     break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_INT64:
     {
         int64_t val = 0;
@@ -760,7 +762,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
         *param->unCurValuePtr.pInt64 = (PARAM_INT64_T)val;
     }
     break;
-
+#endif
     case PARAM_UINT8:
     {
         uint64_t val = 0;
@@ -784,7 +786,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
         *param->unCurValuePtr.pUint32= (PARAM_UINT32_T)val;
     }
     break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_UINT64:
     {
         uint64_t val = 0;
@@ -792,14 +794,15 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
         *param->unCurValuePtr.pUint64 = (PARAM_UINT64_T)val;
     }
     break;
-
+#endif
     case PARAM_FLOAT:
         pbuf = UnSerializeFloat(pbuf, param->unCurValuePtr.pFloat);
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_DOUBLE:
         pbuf = UnSerializeDouble(pbuf, param->unCurValuePtr.pDouble);
         break;
+#endif
 #if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         memcpy(param->unCurValuePtr.pString, &pbuf[0], PARAM_STRING_MAX_LENGTH);
@@ -963,11 +966,11 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
     case PARAM_INT32:
         pbuf = SerializeInt(pbuf, *(PARAM_INT32_T *)param->unCurValuePtr.pVoid, param->length);
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_INT64:
         pbuf = SerializeInt(pbuf, *(PARAM_INT64_T *)param->unCurValuePtr.pVoid, param->length);
         break;
-
+#endif
     case PARAM_UINT8:
         pbuf = SerializeUint(pbuf, *(PARAM_UINT8_T *)param->unCurValuePtr.pVoid, param->length);
         break;
@@ -979,18 +982,19 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
     case PARAM_UINT32:
         pbuf = SerializeUint(pbuf, *(PARAM_UINT32_T *)param->unCurValuePtr.pVoid, param->length);
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_UINT64:
         pbuf = SerializeUint(pbuf, *(PARAM_UINT64_T *)param->unCurValuePtr.pVoid, param->length);
         break;
-
+#endif
     case PARAM_FLOAT:
         pbuf = SerializeFloat(pbuf, *(PARAM_FLOAT_T *)param->unCurValuePtr.pVoid);
         break;
-
+#if PARAM_USE_64_BIT_LENGTH
     case PARAM_DOUBLE:
         pbuf = SerializeDouble(pbuf, *(PARAM_DOUBLE_T *)param->unCurValuePtr.pVoid);
         break;
+#endif
 #if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         memcpy(&pbuf[0], param->unCurValuePtr.pString, PARAM_STRING_MAX_LENGTH);

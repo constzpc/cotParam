@@ -28,6 +28,12 @@
   */
 #define PARAM_USE_STRING_TYPE       1
 
+/**
+  * @brief  使用64位的参数类型
+  * 0,禁止; 1,使能
+  */
+#define PARAM_USE_64_BIT_LENGTH     1
+
 /** 参数名字最大定义长度（包括结束符'\0'）, 因此小于或等于1则禁用参数名字字符串相关功能 */
 #define PARAM_NAME_MAX_LENGTH       15
 

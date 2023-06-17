@@ -7,36 +7,48 @@
 PARAM_DEFINE_DAT (g_test_1, PARAM_INT16, 10);
 PARAM_DEFINE_DAT_DEF (g_test_2, PARAM_UINT16, 20);
 PARAM_DEFINE_DAT_RANGE (g_test_float, PARAM_FLOAT, 3.15, -10, 10);
+#if PARAM_USE_64_BIT_LENGTH
 PARAM_DEFINE_DAT_RANGE (g_test_double, PARAM_DOUBLE, 3.15, -10, 10);
+#endif
 #if PARAM_USE_STRING_TYPE
 PARAM_DEFINE_STR_RANGE (g_test_str, 10, "abcdef", 5);
 #endif
 PARAM_DEFINE_DAT_RANGE (g_test_s8, PARAM_INT8, 10, -10, 15);
 PARAM_DEFINE_DAT_RANGE (g_test_s16, PARAM_INT16, 100, -100, 3000);
 PARAM_DEFINE_DAT_RANGE (g_test_s32, PARAM_INT32, 1000, -900, 10000);
+#if PARAM_USE_64_BIT_LENGTH
 PARAM_DEFINE_DAT_RANGE (g_test_s64, PARAM_INT64, 8000, -100, 1000000);
+#endif
 PARAM_DEFINE_DAT_RANGE (g_test_u8, PARAM_UINT8, 10, 5, 15);
 PARAM_DEFINE_DAT_RANGE (g_test_u16, PARAM_UINT16, 100, 100, 3000);
 PARAM_DEFINE_DAT_RANGE (g_test_u32, PARAM_UINT32, 1000, 900, 10000);
+#if PARAM_USE_64_BIT_LENGTH
 PARAM_DEFINE_DAT_RANGE (g_test_u64, PARAM_UINT64, 8000, 100, 1000000);
+#endif
 
 
 ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT(1, g_test_1, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_DEF(2, g_test_2, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(3, g_test_float, PARAM_ATTR_READ),
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_ITEM_DAT_RANGE(4, g_test_double, PARAM_ATTR_WR),
+#endif
 #if PARAM_USE_STRING_TYPE
     PARAM_ITEM_STR_RANGE(5, g_test_str, PARAM_ATTR_WR),
 #endif
     PARAM_ITEM_DAT_RANGE(6, g_test_s8, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(7, g_test_s16, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(8, g_test_s32, PARAM_ATTR_WR),
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_ITEM_DAT_RANGE(9, g_test_s64, PARAM_ATTR_WR),
+#endif
     PARAM_ITEM_DAT_RANGE(10, g_test_u8, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(11, g_test_u16, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(12, g_test_u32, PARAM_ATTR_NONE),
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_ITEM_DAT_RANGE(13, g_test_u64, PARAM_ATTR_WR),
+#endif
 };
 
 static ParamManager_t sg_tParamManager;
@@ -103,6 +115,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[2].unMaxValuePtr.pVoid , &PARAM_DAT_MAX_VALUE(g_test_float));
 
 #if PARAM_USE_STRING_TYPE
+#if PARAM_USE_64_BIT_LENGTH
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].id, 5);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].length, 10);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].type, PARAM_STRING);
@@ -112,6 +125,18 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unDefValuePtr.pVoid , PARAM_STR_DEF_VALUE(g_test_str));
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unMinValuePtr.pVoid , &PARAM_STR_MIN_LENGTH(g_test_str));
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unMaxValuePtr.pVoid , &PARAM_STR_MAX_LENGTH(g_test_str));
+#else
+    TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[3].id, 5);
+    TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[3].length, 10);
+    TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[3].type, PARAM_STRING);
+    TEST_ASSERT_EQUAL_HEX8(sg_tParamManager.pParamTable[3].attr, PARAM_ATTR_WR | PARAM_ATTR_RESET | PARAM_ATTR_RANGE);
+    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[3].pszName, "g_test_str");
+    TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[3].unCurValuePtr.pVoid , PARAM_STR_CUR_VALUE(g_test_str));
+    TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[3].unDefValuePtr.pVoid , PARAM_STR_DEF_VALUE(g_test_str));
+    TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[3].unMinValuePtr.pVoid , &PARAM_STR_MIN_LENGTH(g_test_str));
+    TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[3].unMaxValuePtr.pVoid , &PARAM_STR_MAX_LENGTH(g_test_str));
+#endif
+
 #endif
 }
 
@@ -219,7 +244,9 @@ void test_SaveAndLoadParam(void)
     g_test_1 = 60;
     g_test_2 = 40;
     g_test_float = -20;
+#if PARAM_USE_64_BIT_LENGTH
     g_test_double = 5.36;
+#endif
 #if PARAM_USE_STRING_TYPE
     sprintf(g_test_str, "12a123");
 #endif
@@ -264,24 +291,15 @@ void test_IterateParam(void)
 void test_FindParam(void)
 {
     const ParamInfo_t *paramInfo;
-
-    paramInfo = Param_FindParamByName(&sg_tParamManager, "g_test_s16");
-#if PARAM_USE_STRING_TYPE
-    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[6], paramInfo);
-#else
-    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[5], paramInfo);
+#if PARAM_USE_64_BIT_LENGTH
+    paramInfo = Param_FindParamByName(&sg_tParamManager, "g_test_double");
+    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[3], paramInfo);
 #endif
-    
-
     paramInfo = Param_FindParamByID(&sg_tParamManager, 3);
     TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[2], paramInfo);
 
-    paramInfo = Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16);
-#if PARAM_USE_STRING_TYPE
-    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[10], paramInfo);
-#else
-    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[9], paramInfo);
-#endif
+    paramInfo = Param_FindParamByParamPtr(&sg_tParamManager, &g_test_float);
+    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[2], paramInfo);
 
     paramInfo = Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u32);
     TEST_ASSERT_EQUAL_PTR(NULL, paramInfo);

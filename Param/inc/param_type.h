@@ -58,13 +58,19 @@ typedef enum
     PARAM_INT8 = 0,
     PARAM_INT16,
     PARAM_INT32,
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_INT64,
+#endif
     PARAM_UINT8,
     PARAM_UINT16,
     PARAM_UINT32,
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_UINT64,
+#endif
     PARAM_FLOAT,
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_DOUBLE,
+#endif
 #if PARAM_USE_STRING_TYPE
     PARAM_STRING,
 #endif
@@ -74,13 +80,19 @@ typedef union {
     PARAM_INT8_T *pInt8;
     PARAM_INT16_T *pInt16;
     PARAM_INT32_T *pInt32;
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_INT64_T *pInt64;
+#endif
     PARAM_UINT8_T *pUint8;
     PARAM_UINT16_T *pUint16;
     PARAM_UINT32_T *pUint32;
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_UINT64_T *pUint64;
+#endif
     PARAM_FLOAT_T *pFloat;
+#if PARAM_USE_64_BIT_LENGTH
     PARAM_DOUBLE_T *pDouble;
+#endif
 #if PARAM_USE_STRING_TYPE
     PARAM_STRING_T *pString;
     param_size_t *pStringLength;
