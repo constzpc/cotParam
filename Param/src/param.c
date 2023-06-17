@@ -28,7 +28,9 @@ typedef union
     uint64_t u64val;
     int64_t s64val;
     double fVal;
+#if PARAM_USE_STRING_TYPE
     char str[PARAM_STRING_MAX_LENGTH + 2];
+#endif
 } Value_u;
 
 static uint8_t *SerializeUint(uint8_t *ptr, uint64_t value, uint8_t len)
@@ -131,6 +133,7 @@ static bool ResetParamValue(const ParamInfo_t *param)
 {
     if (param != NULL && (param->attr & PARAM_ATTR_RESET))
     {
+#if PARAM_USE_STRING_TYPE
         if (param->type != PARAM_STRING)
         {
             memcpy(param->unCurValuePtr.pVoid, param->unDefValuePtr.pVoid, param->length);
@@ -139,7 +142,9 @@ static bool ResetParamValue(const ParamInfo_t *param)
         {
             strcpy(param->unCurValuePtr.pString, param->unDefValuePtr.pString);
         }
-
+#else
+        memcpy(param->unCurValuePtr.pVoid, param->unDefValuePtr.pVoid, param->length);
+#endif
         return true;
     }
 
@@ -150,7 +155,9 @@ static bool ResetParamMinValue(const ParamInfo_t *param)
 {
     if (param != NULL && (param->attr & PARAM_ATTR_RANGE))
     {
+#if PARAM_USE_STRING_TYPE
         if (param->type != PARAM_STRING)
+#endif
         {
             memcpy(param->unCurValuePtr.pVoid, param->unMinValuePtr.pVoid, param->length);
         }
@@ -165,7 +172,9 @@ static bool ResetParamMaxValue(const ParamInfo_t *param)
 {
     if (param != NULL && (param->attr & PARAM_ATTR_RANGE))
     {
+#if PARAM_USE_STRING_TYPE
         if (param->type != PARAM_STRING)
+#endif
         {
             memcpy(param->unCurValuePtr.pVoid, param->unMaxValuePtr.pVoid, param->length);
         }
@@ -512,7 +521,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
-
+#if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         if (strlen(pval->str) < *param->unMinValuePtr.pStringLength)
         {
@@ -523,6 +532,7 @@ static int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
             return 2;
         }
         break;
+#endif
     default:
         return -1;
     }
@@ -575,11 +585,12 @@ static int ValidateRangeByVoid(const ParamInfo_t *param, const void *pval)
     case PARAM_DOUBLE:
         uValue.fVal = *(PARAM_DOUBLE_T *)pval;
         break;
-
+#if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         memcpy(uValue.str, pval, strlen(pval) > PARAM_STRING_MAX_LENGTH ? PARAM_STRING_MAX_LENGTH + 2 : strlen(pval) + 1);
         uValue.str[PARAM_STRING_MAX_LENGTH + 2] = '\0';
         break;
+#endif
     default:
         return -1;
     }
@@ -660,7 +671,7 @@ int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt)
 
         return ret;
     }
-
+#if PARAM_USE_STRING_TYPE
     if (param->type != PARAM_STRING)
     {
         memcpy(param->unCurValuePtr.pVoid, value, param->length);
@@ -669,7 +680,9 @@ int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt)
     {
         strcpy(param->unCurValuePtr.pString, value);
     }
-
+#else
+    memcpy(param->unCurValuePtr.pVoid, value, param->length);
+#endif
     return 0;
 }
 
@@ -787,11 +800,11 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     case PARAM_DOUBLE:
         pbuf = UnSerializeDouble(pbuf, param->unCurValuePtr.pDouble);
         break;
-
+#if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         memcpy(param->unCurValuePtr.pString, &pbuf[0], PARAM_STRING_MAX_LENGTH);
         break;
-
+#endif
     default:
         return 0; // 不支持的参数类型
     }
@@ -816,7 +829,11 @@ static uint8_t *MoveBufToBase(uint8_t *pbuf, uint32_t length)
   */
 int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckError_cb pfnCheckError)
 {
+#if PARAM_USE_STRING_TYPE
     uint8_t buf[sizeof(ParamInfo_t) + PARAM_STRING_MAX_LENGTH];
+#else
+    uint8_t buf[sizeof(ParamInfo_t)];
+#endif
     uint8_t *ptr = buf;
 
     if (manager == NULL || pfnLoadCallback == NULL)
@@ -974,11 +991,11 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
     case PARAM_DOUBLE:
         pbuf = SerializeDouble(pbuf, *(PARAM_DOUBLE_T *)param->unCurValuePtr.pVoid);
         break;
-
+#if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
         memcpy(&pbuf[0], param->unCurValuePtr.pString, PARAM_STRING_MAX_LENGTH);
         break;
-
+#endif
     default:
         return 0; // 不支持的参数类型
     }
@@ -997,7 +1014,11 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
   */
 int Param_Save(ParamManager_t *manager, pfnSave_cb pfnSaveCallback, pfnCheckError_cb pfnCheckError)
 {
+#if PARAM_USE_STRING_TYPE
     uint8_t buf[sizeof(ParamInfo_t) + PARAM_STRING_MAX_LENGTH];
+#else
+    uint8_t buf[sizeof(ParamInfo_t)];
+#endif
     uint8_t *ptr = buf;
     uint16_t length = 0;
 #if PARAM_USE_KEY_VALUE

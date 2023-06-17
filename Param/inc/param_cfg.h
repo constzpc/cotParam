@@ -22,12 +22,19 @@
  *  */
 #define PARAM_USE_KEY_VALUE         1
 
+/**
+  * @brief  使用字符串参数类型
+  * 0,禁止; 1,使能
+  */
+#define PARAM_USE_STRING_TYPE       1
+
 /** 参数名字最大定义长度（包括结束符'\0'）, 因此小于或等于1则禁用参数名字字符串相关功能 */
 #define PARAM_NAME_MAX_LENGTH       15
 
+#if PARAM_USE_STRING_TYPE
 /** 字符串类型的参数取值最大定义长度（包括结束符） */
 #define PARAM_STRING_MAX_LENGTH     15
-
+#endif
 
 #if PARAM_USE_KEY_VALUE
 

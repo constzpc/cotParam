@@ -8,7 +8,9 @@ PARAM_DEFINE_DAT (g_test_1, PARAM_INT16, 10);
 PARAM_DEFINE_DAT_DEF (g_test_2, PARAM_UINT16, 20);
 PARAM_DEFINE_DAT_RANGE (g_test_float, PARAM_FLOAT, 3.15, -10, 10);
 PARAM_DEFINE_DAT_RANGE (g_test_double, PARAM_DOUBLE, 3.15, -10, 10);
+#if PARAM_USE_STRING_TYPE
 PARAM_DEFINE_STR_RANGE (g_test_str, 10, "abcdef", 5);
+#endif
 PARAM_DEFINE_DAT_RANGE (g_test_s8, PARAM_INT8, 10, -10, 15);
 PARAM_DEFINE_DAT_RANGE (g_test_s16, PARAM_INT16, 100, -100, 3000);
 PARAM_DEFINE_DAT_RANGE (g_test_s32, PARAM_INT32, 1000, -900, 10000);
@@ -24,7 +26,9 @@ ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT_DEF(2, g_test_2, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(3, g_test_float, PARAM_ATTR_READ),
     PARAM_ITEM_DAT_RANGE(4, g_test_double, PARAM_ATTR_WR),
+#if PARAM_USE_STRING_TYPE
     PARAM_ITEM_STR_RANGE(5, g_test_str, PARAM_ATTR_WR),
+#endif
     PARAM_ITEM_DAT_RANGE(6, g_test_s8, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(7, g_test_s16, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(8, g_test_s32, PARAM_ATTR_WR),
@@ -98,6 +102,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[2].unMinValuePtr.pVoid , &PARAM_DAT_MIN_VALUE(g_test_float));
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[2].unMaxValuePtr.pVoid , &PARAM_DAT_MAX_VALUE(g_test_float));
 
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].id, 5);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].length, 10);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].type, PARAM_STRING);
@@ -107,7 +112,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unDefValuePtr.pVoid , PARAM_STR_DEF_VALUE(g_test_str));
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unMinValuePtr.pVoid , &PARAM_STR_MIN_LENGTH(g_test_str));
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unMaxValuePtr.pVoid , &PARAM_STR_MAX_LENGTH(g_test_str));
-    
+#endif
 }
 
 void test_ResetParam(void)
@@ -115,14 +120,17 @@ void test_ResetParam(void)
     g_test_1 = 80;
     g_test_2 = 50;
     g_test_float = 1;
+#if PARAM_USE_STRING_TYPE
     sprintf(g_test_str, "ABCDFS");
-
+#endif
     Param_ResetParam(&sg_tParamManager);
 
     TEST_ASSERT_EQUAL_INT(g_test_1, 80);
     TEST_ASSERT_EQUAL_UINT(g_test_2, PARAM_DAT_DEF_VALUE(g_test_2));
     TEST_ASSERT_EQUAL_FLOAT(g_test_float, PARAM_DAT_DEF_VALUE(g_test_float));
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_STRING(g_test_str, PARAM_STR_DEF_VALUE(g_test_str));
+#endif
 }
 
 
@@ -190,26 +198,31 @@ void test_SaveAndLoadParam(void)
     g_test_1 = 80;
     g_test_2 = 50;
     g_test_float = -20;
+#if PARAM_USE_STRING_TYPE
     sprintf(g_test_str, "12a");
-
+#endif
     Param_Save(&sg_tParamManager, OnSaveCallback, NULL);
     TEST_ASSERT_EQUAL_INT(g_test_1, 80);
     TEST_ASSERT_EQUAL_UINT(g_test_2, 50);
     TEST_ASSERT_EQUAL_FLOAT(g_test_float, -20);
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_STRING(g_test_str, "12a");
-
+#endif
     Param_Save(&sg_tParamManager, OnSaveCallback, OnCheckErrorResetHandle);
 
     TEST_ASSERT_EQUAL_INT(g_test_1, 80);
     TEST_ASSERT_EQUAL_UINT(g_test_2, 50);
     TEST_ASSERT_EQUAL_FLOAT(g_test_float, PARAM_DAT_DEF_VALUE(g_test_float));
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_STRING(g_test_str, PARAM_STR_DEF_VALUE(g_test_str));
-
+#endif
     g_test_1 = 60;
     g_test_2 = 40;
     g_test_float = -20;
     g_test_double = 5.36;
+#if PARAM_USE_STRING_TYPE
     sprintf(g_test_str, "12a123");
+#endif
     g_test_s8 = 20;
     g_test_s16 = 1000;
 
@@ -218,7 +231,9 @@ void test_SaveAndLoadParam(void)
     TEST_ASSERT_EQUAL_INT(g_test_1, 80);
     TEST_ASSERT_EQUAL_UINT(g_test_2, 50);
     TEST_ASSERT_EQUAL_FLOAT(g_test_float, PARAM_DAT_DEF_VALUE(g_test_float));
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_STRING(g_test_str, PARAM_STR_DEF_VALUE(g_test_str));
+#endif
     TEST_ASSERT_EQUAL_INT(PARAM_DAT_DEF_VALUE(g_test_s8), g_test_s8);
     TEST_ASSERT_EQUAL_INT(PARAM_DAT_DEF_VALUE(g_test_s16), g_test_s16);
     TEST_ASSERT_EQUAL_INT(PARAM_DAT_DEF_VALUE(g_test_u16), g_test_u16);
@@ -251,13 +266,22 @@ void test_FindParam(void)
     const ParamInfo_t *paramInfo;
 
     paramInfo = Param_FindParamByName(&sg_tParamManager, "g_test_s16");
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[6], paramInfo);
+#else
+    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[5], paramInfo);
+#endif
+    
 
     paramInfo = Param_FindParamByID(&sg_tParamManager, 3);
     TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[2], paramInfo);
 
     paramInfo = Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16);
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[10], paramInfo);
+#else
+    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[9], paramInfo);
+#endif
 
     paramInfo = Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u32);
     TEST_ASSERT_EQUAL_PTR(NULL, paramInfo);
@@ -286,6 +310,7 @@ void test_CheckRange(void)
     TEST_ASSERT_EQUAL_INT(2, Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_MIN_MAX));
     TEST_ASSERT_EQUAL_UINT(3000, PARAM_DAT_CUR_VALUE(g_test_u16));
 
+#if PARAM_USE_STRING_TYPE
     snprintf(g_test_str, sizeof(g_test_str), "ABCDEF");
     TEST_ASSERT_EQUAL_INT(0, Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, g_test_str), PARAM_NONE));
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
@@ -298,6 +323,7 @@ void test_CheckRange(void)
     snprintf(g_test_str, sizeof(g_test_str), "AB");
     TEST_ASSERT_EQUAL_INT(1, Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, g_test_str), PARAM_DEF));
     TEST_ASSERT_EQUAL_STRING("abcdef", g_test_str);
+#endif
 }
 
 void test_CheckRangeMacroDefine(void)
@@ -323,6 +349,7 @@ void test_CheckRangeMacroDefine(void)
     TEST_ASSERT_EQUAL_INT(2, PARAM_DAT_CHECK_RANGE(g_test_u16, PARAM_MIN_MAX));
     TEST_ASSERT_EQUAL_UINT(3000, PARAM_DAT_CUR_VALUE(g_test_u16));
 
+#if PARAM_USE_STRING_TYPE
     snprintf(g_test_str, sizeof(g_test_str), "ABCDEF");
     TEST_ASSERT_EQUAL_INT(0, PARAM_STR_CHECK_RANGE(g_test_str, PARAM_NONE));
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
@@ -335,6 +362,7 @@ void test_CheckRangeMacroDefine(void)
     snprintf(g_test_str, sizeof(g_test_str), "AB");
     TEST_ASSERT_EQUAL_INT(1, PARAM_STR_CHECK_RANGE(g_test_str, PARAM_DEF));
     TEST_ASSERT_EQUAL_STRING("abcdef", g_test_str);
+#endif
 }
 
 void test_SetNewValue(void)
@@ -361,6 +389,7 @@ void test_SetNewValue(void)
     TEST_ASSERT_EQUAL_INT(2, Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_MIN_MAX));
     TEST_ASSERT_EQUAL_UINT(3000, PARAM_DAT_CUR_VALUE(g_test_u16));
 
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_INT(0, Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, g_test_str), "ABCDEF", PARAM_NONE));
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
     TEST_ASSERT_EQUAL_INT(1, Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, g_test_str), "AB", PARAM_MIN_MAX));
@@ -369,6 +398,7 @@ void test_SetNewValue(void)
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
     TEST_ASSERT_EQUAL_INT(2, Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, g_test_str), "abcdefg123456", PARAM_DEF));
     TEST_ASSERT_EQUAL_STRING("abcdef", g_test_str);
+#endif
 }
 
 void test_SetNewValueMacroDefine(void)
@@ -395,6 +425,7 @@ void test_SetNewValueMacroDefine(void)
     TEST_ASSERT_EQUAL_INT(2, PARAM_DAT_SET_NEW_VALUE(g_test_u16, tmp, PARAM_MIN_MAX));
     TEST_ASSERT_EQUAL_UINT(3000, PARAM_DAT_CUR_VALUE(g_test_u16));
 
+#if PARAM_USE_STRING_TYPE
     TEST_ASSERT_EQUAL_INT(0, PARAM_STR_SET_NEW_VALUE(g_test_str, "ABCDEF", PARAM_NONE));
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
     TEST_ASSERT_EQUAL_INT(1, PARAM_STR_SET_NEW_VALUE(g_test_str, "AB", PARAM_MIN_MAX));
@@ -403,6 +434,7 @@ void test_SetNewValueMacroDefine(void)
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
     TEST_ASSERT_EQUAL_INT(2, PARAM_STR_SET_NEW_VALUE(g_test_str, "abcdefg123456", PARAM_DEF));
     TEST_ASSERT_EQUAL_STRING("abcdef", g_test_str);
+#endif
 }
 
 void test_ResetValue(void)

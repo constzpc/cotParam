@@ -64,6 +64,7 @@
     const type##_T min_##name = minVal;\
     const type##_T max_##name = maxVal;
 
+#if PARAM_USE_STRING_TYPE
 /**
   * @brief  定义字符串参数
   * 
@@ -101,6 +102,7 @@
     const char def_##name[] = {defVal};\
     const param_size_t min_##name = minLength;\
     const param_size_t max_##name = length - 1;
+#endif
 
 #if (PARAM_NAME_MAX_LENGTH > 1)
 /**
@@ -139,7 +141,7 @@
                                           .unDefValuePtr.pVoid = (void *)&def_##_name, \
                                           .unMinValuePtr.pVoid = (void *)&min_##_name, \
                                           .unMaxValuePtr.pVoid = (void *)&max_##_name}
-
+#if PARAM_USE_STRING_TYPE
 /**
   * @brief  字符串参数注册
   * 
@@ -176,7 +178,7 @@
                                           .unDefValuePtr.pVoid = (void *)&def_##_name, \
                                           .unMinValuePtr.pVoid = (void *)&min_##_name, \
                                           .unMaxValuePtr.pVoid = (void *)&max_##_name}
-
+#endif
 #else
 
 /**
@@ -215,7 +217,7 @@
                                           .unDefValuePtr.pVoid = (void *)&def_##_name, \
                                           .unMinValuePtr.pVoid = (void *)&min_##_name, \
                                           .unMaxValuePtr.pVoid = (void *)&max_##_name}
-
+#if PARAM_USE_STRING_TYPE
 /**
   * @brief  字符串参数注册
   * 
@@ -252,7 +254,7 @@
                                           .unDefValuePtr.pVoid = (void *)&def_##_name, \
                                           .unMinValuePtr.pVoid = (void *)&min_##_name, \
                                           .unMaxValuePtr.pVoid = (void *)&max_##_name}
-
+#endif
 #endif
 
 /**

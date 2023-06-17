@@ -65,7 +65,9 @@ typedef enum
     PARAM_UINT64,
     PARAM_FLOAT,
     PARAM_DOUBLE,
+#if PARAM_USE_STRING_TYPE
     PARAM_STRING,
+#endif
 } ParamType_e;
 
 typedef union {
@@ -79,8 +81,10 @@ typedef union {
     PARAM_UINT64_T *pUint64;
     PARAM_FLOAT_T *pFloat;
     PARAM_DOUBLE_T *pDouble;
+#if PARAM_USE_STRING_TYPE
     PARAM_STRING_T *pString;
     param_size_t *pStringLength;
+#endif
     void *pVoid;
 } ParamTypePtr_u;
 
