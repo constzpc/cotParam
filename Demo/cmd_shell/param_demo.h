@@ -22,11 +22,8 @@ void InitParam(bool isReset);
 void ReloadParam(bool isReset);
 
 void ResetParam(void);
-void SaveParam(void);
-
-extern const ParamInfo_t *FindParamByName(const char *pszName);
-extern const ParamInfo_t* FindParamByID(uint16_t id);
+void SaveParam(bool isReset);
 
 extern const bool SetParamNewValue(const void *curParamPtr, const void *newValue);
-
+void ShowAllParam(void);
 #endif

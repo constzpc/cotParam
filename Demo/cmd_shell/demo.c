@@ -3,19 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-void ShowAllParam(void)
-{
-    printf("param list:\n");
-    printf("\tg_test:     %d\n", g_test);
-    printf("\tg_test_2:   %d\n", g_test_2);
-    printf("\tg_test_3:   %f\n", g_test_3);
-    printf("\tg_test_str: %s\n", g_test_str);
-    printf("\tg_test_4:   %d\n", g_test_4);
-    printf("\tg_test_5:   %d\n", g_test_5);
-    printf("\tg_test_6:   %d\n", g_test_6);
-    printf("\tg_test_7:   %d\n", g_test_7);
-
-}
 
 int main()
 {
@@ -24,83 +11,36 @@ int main()
     ShowAllParam();
 
     g_test = 80;
-    sprintf(g_test_str, "g_test_6");
+    g_test_3 = -20.5;
 
-    
+    SaveParam(false);
+    ReloadParam(false);
 
-    g_test_6 = 200;
+    int ret = PARAM_DAT_SET_NEW_VALUE(g_test_6, 50, PARAM_DEF);
+    printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
 
-    ParamVal_u test_6;
+    ret = PARAM_DAT_SET_NEW_VALUE(g_test_6, 101, PARAM_DEF);
+    printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
 
-    test_6.u8val = 200;
+    ret = PARAM_DAT_SET_NEW_VALUE(g_test_6, 101, PARAM_NONE);
+    printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
 
-    // bool ret;
+    ret = PARAM_DAT_SET_NEW_VALUE(g_test_6, 101, PARAM_MIN_MAX);
+    printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
 
-    // PARAM_DECLTYPE(g_test_6) tmp = 20;
+    ret = PARAM_DAT_SET_NEW_VALUE(g_test_6, 1, PARAM_MIN_MAX);
+    printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
 
+    PARAM_STR_SET_NEW_VALUE(g_test_str, "123aa9", PARAM_NONE);
+    printf("ret = %d, g_test_str = %s\n", ret, g_test_str);
 
-    // PARAM_UPDATE(g_test_str, "999x", ret);
+    PARAM_STR_SET_NEW_VALUE(g_test_str, "123aa1245249", PARAM_DEF);
+    printf("ret = %d, g_test_str = %s\n", ret, g_test_str);
 
-    // if (!ret)
-    // {
-    //     printf("change %s fail\n", "g_test_str");
-    // }
-
-    // PARAM_UPDATE(g_test_6, 200, ret);
-
-    // if (!ret)
-    // {
-    //     printf("change %s fail\n", "g_test_6");
-    // }
+    PARAM_STR_SET_NEW_VALUE(g_test_str, "123aa945457", PARAM_MIN_MAX);
+    printf("ret = %d, g_test_str = %s\n", ret, g_test_str);
 
     ShowAllParam();
-
-    SaveParam();
-
-
-
-    // ParamManager_t tParamManager;
-    // ParamManager_t tParamManager2;
-
-    // Param_Init(&tParamManager, sg_ParamTable, PARAM_TABLE_SIZE(sg_ParamTable));
-
-    // Param_Init(&tParamManager2, sg_ParamTable2, PARAM_TABLE_SIZE(sg_ParamTable2));
-
-    // Param_SetCallBackFun(&tParamManager, OnLoadCallback, OnSaveCallback);
-    // Param_SetCallBackFun(&tParamManager2, OnLoadCallback, OnSaveCallback);
-
-    // for (int i = 0; i < tParamManager.count; i++)
-    // {
-    //     char outbuf[1024];
-    //     Param_Sprintf(outbuf, &tParamManager.pParamTable[i]);
-    //     printf("%s\n", outbuf);
-    // }
-
-    // g_test_5 = 300;  // 设置超出范围
-
-    // Param_Save(&tParamManager, NULL);
-    // Param_Load(&tParamManager, OnCheckErrorResetHandle);
-
-    // printf("%s\n", "outbuf");
-
-    // for (int i = 0; i < tParamManager.count; i++)
-    // {
-    //     char outbuf[1024];
-    //     Param_Sprintf(outbuf, &tParamManager.pParamTable[i]);
-    //     printf("%s\n", outbuf);
-    // }
-
-    // g_test_5 = 400;  // 设置超出范围
-
-    // Param_Save(&tParamManager, NULL);
-    // Param_Load(&tParamManager2, OnCheckErrorHandle);
-
-    // for (int i = 0; i < tParamManager2.count; i++)
-    // {
-    //     char outbuf[1024];
-    //     Param_Sprintf(outbuf, &tParamManager2.pParamTable[i]);
-    //     printf("%s\n", outbuf);
-    // }
 
     return 0;
 }

@@ -22,13 +22,10 @@
  *  */
 #define PARAM_USE_KEY_VALUE         1
 
-/** 字符串参数长度需要使用的字节(1：最长可定义254长度的字符串参数, 2：最长可定义63335长度的字符串参数) */
-#define PARAM_STRING_SIZE           1
+/** 参数名字最大定义长度（包括结束符'\0'）, 因此小于或等于1则禁用参数名字字符串相关功能 */
+#define PARAM_NAME_MAX_LENGTH       15
 
-/** 参数名字最大定义长度（包括结束符） */
-#define PARAM_NAME_MAX_LENGTH       32
-
-/** 字符串参数最大定义长度（包括结束符） */
+/** 字符串类型的参数取值最大定义长度（包括结束符） */
 #define PARAM_STRING_MAX_LENGTH     15
 
 
@@ -45,15 +42,15 @@
 #if PARAM_USE_KEY_VALUE
     #if (PARAM_SUPPORT_NUM == PARAM_SUPPORT_16)
         #if PARAM_STRING_MAX_LENGTH >= 16
-            #error "param: string max length over 15"
+            #error "Param: The maximum length of a string can not over 15"
         #endif
     #elif (PARAM_SUPPORT_NUM == PARAM_SUPPORT_256)
         #if PARAM_STRING_MAX_LENGTH >= 256
-            #error "param: string max length over 256"
+            #error "Param: The maximum length of a string can not over 256"
         #endif
     #elif (PARAM_SUPPORT_NUM == PARAM_SUPPORT_4096)
         #if PARAM_STRING_MAX_LENGTH >= 4096
-            #error "param: string max length over 4096"
+            #error "Param: The maximum length of a string can not over 4096"
         #endif
     #endif
 #endif

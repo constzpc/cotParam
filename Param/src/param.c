@@ -23,15 +23,13 @@
 #include <stdio.h>
 
 
-#define CASE_CHECK_RANGE(type, cur_ptr, min_ptr, max_ptr)   \
-    case type:\
-    {\
-        type##_T cur = *(const type##_T *)cur_ptr;\
-        type##_T min = min_ptr != NULL ? *(const type##_T *)min_ptr : 0;\
-        type##_T max = max_ptr != NULL ? *(const type##_T *)max_ptr : 0;\
-        ret = (cur < min || cur > max) ? false : true;\
-        break;\
-    }
+typedef union
+{
+    uint64_t u64val;
+    int64_t s64val;
+    double fVal;
+    char str[PARAM_STRING_MAX_LENGTH];
+} Value_u;
 
 static uint8_t *SerializeUint(uint8_t *ptr, uint64_t value, uint8_t len)
 {
@@ -131,20 +129,45 @@ static uint8_t *UnSerializeDouble(const uint8_t *ptr, double *value)
 
 static bool ResetParamValue(const ParamInfo_t *param)
 {
-    if (param != NULL && param->attr & PARAM_ATTR_RESET)
+    if (param != NULL && (param->attr & PARAM_ATTR_RESET))
     {
-        if (param->type != PARAM_STARING)
+        if (param->type != PARAM_STRING)
         {
-            memcpy(param->pCurValue, param->pDefValue, param->length);
+            memcpy(param->unCurValuePtr.pVoid, param->unDefValuePtr.pVoid, param->length);
         }
         else
         {
-            strcpy(param->pCurValue, param->pDefValue);
+            strcpy(param->unCurValuePtr.pString, param->unDefValuePtr.pString);
         }
 
-        if (param->pfnCallback != NULL)
+        return true;
+    }
+
+    return false;
+}
+
+static bool ResetParamMinValue(const ParamInfo_t *param)
+{
+    if (param != NULL && (param->attr & PARAM_ATTR_RANGE))
+    {
+        if (param->type != PARAM_STRING)
         {
-            param->pfnCallback(param);
+            memcpy(param->unCurValuePtr.pVoid, param->unMinValuePtr.pVoid, param->length);
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+static bool ResetParamMaxValue(const ParamInfo_t *param)
+{
+    if (param != NULL && (param->attr & PARAM_ATTR_RANGE))
+    {
+        if (param->type != PARAM_STRING)
+        {
+            memcpy(param->unCurValuePtr.pVoid, param->unMaxValuePtr.pVoid, param->length);
         }
 
         return true;
@@ -170,7 +193,7 @@ int Param_Init(ParamManager_t *manager, ParamInfo_t *pParamTable, uint16_t count
 
     for (uint16_t i = 0; i < count; i++)
     {
-        if (pParamTable[i].pMaxValue == NULL || pParamTable[i].pMinValue == NULL)
+        if (pParamTable[i].unMaxValuePtr.pVoid == NULL || pParamTable[i].unMinValuePtr.pVoid == NULL)
         {
             pParamTable[i].attr &= ~PARAM_ATTR_RANGE;
         }
@@ -180,12 +203,12 @@ int Param_Init(ParamManager_t *manager, ParamInfo_t *pParamTable, uint16_t count
             pParamTable[i].attr &= ~PARAM_ATTR_WRITE;
         }
 
-        if (pParamTable[i].pDefValue == NULL)
+        if (pParamTable[i].unDefValuePtr.pVoid == NULL)
         {
             pParamTable[i].attr &= ~PARAM_ATTR_RESET;
         }
 
-        if (pParamTable[i].pCurValue == NULL)
+        if (pParamTable[i].unCurValuePtr.pVoid == NULL)
         {
             return -1;
         }
@@ -193,26 +216,6 @@ int Param_Init(ParamManager_t *manager, ParamInfo_t *pParamTable, uint16_t count
 
     manager->pParamTable = pParamTable;
     manager->count = count;
-    return 0;
-}
-
-/**
-  * @brief      设置参数加载和保存时调用的回调函数
-  *
-  * @param      manager 参数表管理句柄
-  * @param      pfnLoadCallback 加载回调函数
-  * @param      pfnSaveCallback 保存回调函数
-  * @return     0,成功; -1,失败
-  */
-int Param_SetCallBackFun(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnSave_cb pfnSaveCallback)
-{
-    if (manager == NULL)
-    {
-        return -1;
-    }
-
-    manager->pfnLoadCallback = pfnLoadCallback;
-    manager->pfnSaveCallback = pfnSaveCallback;
     return 0;
 }
 
@@ -242,7 +245,7 @@ static ParamInfo_t *FindParamByParamPtr(ParamManager_t *manager, const void *cur
 {
     for (uint16_t i = 0; i < manager->count; ++i)
     {
-        if (manager->pParamTable[i].pCurValue == curParamPtr)
+        if (manager->pParamTable[i].unCurValuePtr.pVoid == curParamPtr)
         {
             return &manager->pParamTable[i];
         }
@@ -251,32 +254,39 @@ static ParamInfo_t *FindParamByParamPtr(ParamManager_t *manager, const void *cur
     return NULL;
 }
 
-extern bool Param_SetParam(ParamManager_t *manager, const void *curParamPtr, const void *newValue)
+/**
+  * @brief      参数列表迭代器
+  * 
+  * @attention  无读取权限的参数会自动跳过
+  * @param      manager 参数表管理句柄
+  * @param      psIdx   参数表起始索引
+  * @return     参数信息
+  */
+ParamInfo_t *Param_IterateList(ParamManager_t *manager, size_t *psIdx)
 {
-    ParamInfo_t *pInfo;
+    ParamInfo_t *p = NULL;
 
-    if (manager != NULL)
+    if (manager == NULL || psIdx == NULL || *psIdx > manager->count)
     {
-        pInfo = FindParamByParamPtr(manager, curParamPtr);
-
-        if (pInfo->attr & PARAM_ATTR_WRITE)
-        {
-            if (pInfo->type != PARAM_STARING)
-            {
-                memcpy(pInfo->pCurValue, newValue, pInfo->length);
-            }
-            else
-            {
-                strcpy(pInfo->pCurValue, newValue);
-            }
-
-            return true;
-        }
+        return NULL;
     }
 
-    return false;
+    while (*psIdx < manager->count)
+    {
+        if (manager->pParamTable[*psIdx].attr & PARAM_ATTR_READ)
+        {
+            p = &manager->pParamTable[*psIdx];
+            (*psIdx)++;
+            break;
+        }
+
+        (*psIdx)++;
+    }
+
+    return p;
 }
 
+#if (PARAM_NAME_MAX_LENGTH > 1)
 static ParamInfo_t *FindParamByName(ParamManager_t *manager, const char *pszName)
 {
     for (uint16_t i = 0; i < manager->count; ++i)
@@ -289,6 +299,7 @@ static ParamInfo_t *FindParamByName(ParamManager_t *manager, const char *pszName
 
     return NULL;
 }
+#endif
 
 /**
   * @brief      根据参数名称查找参数信息
@@ -300,6 +311,7 @@ static ParamInfo_t *FindParamByName(ParamManager_t *manager, const char *pszName
   */
 const ParamInfo_t *Param_FindParamByName(ParamManager_t *manager, const char *pszName)
 {
+#if (PARAM_NAME_MAX_LENGTH > 1)
     ParamInfo_t *pInfo;
 
     if (manager != NULL)
@@ -312,8 +324,10 @@ const ParamInfo_t *Param_FindParamByName(ParamManager_t *manager, const char *ps
         }
     }
 
+#endif
     return NULL;
 }
+
 
 static ParamInfo_t *FindParamByID(ParamManager_t *manager, uint16_t id)
 {
@@ -378,462 +392,283 @@ const ParamInfo_t *Param_FindParamByParamPtr(ParamManager_t *manager, const void
     return NULL;
 }
 
-/**
-  * @brief      获取参数的当前值
-  *
-  * @param      param 参数信息
-  * @return     当前值的地址指针
-  */
-const void *Param_GetParamValue(const ParamInfo_t *param)
-{
-    if (param == NULL)
-    {
-        return NULL;
-    }
-
-    return (const void *)param->pCurValue;
-}
-
-static void ParamInfoToParamMemInfo(ParamMemInfo_t *pParamMem, const ParamInfo_t *param)
-{
-    memset(pParamMem, 0, sizeof(ParamMemInfo_t));
-    pParamMem->id = param->id;
-    pParamMem->type = param->type;
-    pParamMem->attr = param->attr;
-    pParamMem->length = param->length;
-
-    if (param->pszName != NULL)
-    {
-        size_t len = strlen(param->pszName) > param->length ? param->length - 1 : strlen(param->pszName);
-
-        memcpy(pParamMem->szName, param->pszName, len);
-    }
-
-    switch (param->type)
-    {
-    case PARAM_INT8:
-        pParamMem->curValue.s8val = *(const int8_t *)param->pCurValue;
-        pParamMem->minValue.s8val = param->pMinValue != NULL ? *(const int8_t *)param->pMinValue : 0;
-        pParamMem->maxValue.s8val = param->pMaxValue != NULL ? *(const int8_t *)param->pMaxValue : 0;
-        pParamMem->defValue.s8val = param->pDefValue != NULL ? *(const int8_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_INT16:
-        pParamMem->curValue.s16val = *(const int16_t *)param->pCurValue;
-        pParamMem->minValue.s16val = param->pMinValue != NULL ? *(const int16_t *)param->pMinValue : 0;
-        pParamMem->maxValue.s16val = param->pMaxValue != NULL ? *(const int16_t *)param->pMaxValue : 0;
-        pParamMem->defValue.s16val = param->pDefValue != NULL ? *(const int16_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_INT32:
-        pParamMem->curValue.s32val = *(const int32_t *)param->pCurValue;
-        pParamMem->minValue.s32val = param->pMinValue != NULL ? *(const int32_t *)param->pMinValue : 0;
-        pParamMem->maxValue.s32val = param->pMaxValue != NULL ? *(const int32_t *)param->pMaxValue : 0;
-        pParamMem->defValue.s32val = param->pDefValue != NULL ? *(const int32_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_INT64:
-        pParamMem->curValue.s64val = *(const int64_t *)param->pCurValue;
-        pParamMem->minValue.s64val = param->pMinValue != NULL ? *(const int64_t *)param->pMinValue : 0;
-        pParamMem->maxValue.s64val = param->pMaxValue != NULL ? *(const int64_t *)param->pMaxValue : 0;
-        pParamMem->defValue.s64val = param->pDefValue != NULL ? *(const int64_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_UINT8:
-        pParamMem->curValue.u8val = *(const uint8_t *)param->pCurValue;
-        pParamMem->minValue.u8val = param->pMinValue != NULL ? *(const uint8_t *)param->pMinValue : 0;
-        pParamMem->maxValue.u8val = param->pMaxValue != NULL ? *(const uint8_t *)param->pMaxValue : 0;
-        pParamMem->defValue.u8val = param->pDefValue != NULL ? *(const uint8_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_UINT16:
-        pParamMem->curValue.u16val = *(const uint16_t *)param->pCurValue;
-        pParamMem->minValue.u16val = param->pMinValue != NULL ? *(const uint16_t *)param->pMinValue : 0;
-        pParamMem->maxValue.u16val = param->pMaxValue != NULL ? *(const uint16_t *)param->pMaxValue : 0;
-        pParamMem->defValue.u16val = param->pDefValue != NULL ? *(const uint16_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_UINT32:
-        pParamMem->curValue.u32val = *(const uint32_t *)param->pCurValue;
-        pParamMem->minValue.u32val = param->pMinValue != NULL ? *(const uint32_t *)param->pMinValue : 0;
-        pParamMem->maxValue.u32val = param->pMaxValue != NULL ? *(const uint32_t *)param->pMaxValue : 0;
-        pParamMem->defValue.u32val = param->pDefValue != NULL ? *(const uint32_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_UINT64:
-        pParamMem->curValue.u64val = *(const uint64_t *)param->pCurValue;
-        pParamMem->minValue.u64val = param->pMinValue != NULL ? *(const uint64_t *)param->pMinValue : 0;
-        pParamMem->maxValue.u64val = param->pMaxValue != NULL ? *(const uint64_t *)param->pMaxValue : 0;
-        pParamMem->defValue.u64val = param->pDefValue != NULL ? *(const uint64_t *)param->pDefValue : 0;
-        break;
-
-    case PARAM_FLOAT:
-        pParamMem->curValue.fval = *(const PARAM_FLOAT_T *)param->pCurValue;
-        pParamMem->minValue.fval = param->pMinValue != NULL ? *(const PARAM_FLOAT_T *)param->pMinValue : 0;
-        pParamMem->maxValue.fval = param->pMaxValue != NULL ? *(const PARAM_FLOAT_T *)param->pMaxValue : 0;
-        pParamMem->defValue.fval = param->pDefValue != NULL ? *(const PARAM_FLOAT_T *)param->pDefValue : 0;
-        break;
-
-    case PARAM_DOUBLE:
-        pParamMem->curValue.dval = *(const PARAM_DOUBLE_T *)param->pCurValue;
-        pParamMem->minValue.dval = param->pMinValue != NULL ? *(const PARAM_DOUBLE_T *)param->pMinValue : 0;
-        pParamMem->maxValue.dval = param->pMaxValue != NULL ? *(const PARAM_DOUBLE_T *)param->pMaxValue : 0;
-        pParamMem->defValue.dval = param->pDefValue != NULL ? *(const PARAM_DOUBLE_T *)param->pDefValue : 0;
-        break;
-
-    case PARAM_STARING:
-        memcpy(pParamMem->curValue.szVal, param->pCurValue, strlen(param->pCurValue) >= param->length ? param->length - 1 : strlen(param->pCurValue));
-
-        pParamMem->minValue.u64val = param->pMinValue != NULL ? *(const param_size_t *)param->pMinValue : 0;
-        pParamMem->maxValue.u64val = param->pMaxValue != NULL ? *(const param_size_t *)param->pMaxValue : 0;
-
-        if (param->pDefValue != NULL)
-        {
-            memcpy(pParamMem->defValue.szVal, param->pDefValue, strlen(param->pDefValue) >= param->length ? param->length - 1 : strlen(param->pDefValue));
-        }
-
-        break;
-
-    default:
-        break;
-    }
-}
-
-static void ParamInfoFromParamMemInfo(ParamInfo_t *param, const ParamMemInfo_t *pParamMem)
-{
-    // param->id = pParamMem->id;
-    // param->attr = pParamMem->attr;
-    param->type = pParamMem->type;
-    // param->length = pParamMem->length;
-
-    switch (pParamMem->type)
-    {
-    case PARAM_INT8:
-        *(int8_t *)param->pCurValue = pParamMem->curValue.s8val;
-        break;
-
-    case PARAM_INT16:
-        *(int16_t *)param->pCurValue = pParamMem->curValue.s16val;
-        break;
-
-    case PARAM_INT32:
-        *(int32_t *)param->pCurValue = pParamMem->curValue.s32val;
-        break;
-
-    case PARAM_INT64:
-        *(int64_t *)param->pCurValue = pParamMem->curValue.s64val;
-        break;
-
-    case PARAM_UINT8:
-        *(uint8_t *)param->pCurValue = pParamMem->curValue.u8val;
-        break;
-
-    case PARAM_UINT16:
-        *(uint16_t *)param->pCurValue = pParamMem->curValue.u16val;
-        break;
-
-    case PARAM_UINT32:
-        *(uint32_t *)param->pCurValue = pParamMem->curValue.u32val;
-        break;
-
-    case PARAM_UINT64:
-        *(uint64_t *)param->pCurValue = pParamMem->curValue.u64val;
-        break;
-
-    case PARAM_FLOAT:
-        *(PARAM_FLOAT_T *)param->pCurValue = pParamMem->curValue.fval;
-        break;
-
-    case PARAM_DOUBLE:
-        *(PARAM_DOUBLE_T *)param->pCurValue = pParamMem->curValue.dval;
-        break;
-
-    case PARAM_STARING:
-        if (strlen(pParamMem->curValue.szVal) >= param->length)
-        {
-            memcpy(param->pCurValue, pParamMem->curValue.szVal, param->length - 1);
-        }
-        else
-        {
-            memcpy(param->pCurValue, pParamMem->curValue.szVal, strlen(pParamMem->curValue.szVal));
-        }
-
-        break;
-
-    default:
-        break;
-    }
-}
-
 
 // 验证参数是否在指定范围内
-bool ValidateIntRange(const ParamInfo_t *param, const void *pCurValue)
+int ValidateRange(const ParamInfo_t *param, const Value_u *pval)
 {
-    bool ret = false;
-
     if (!(param->attr & PARAM_ATTR_RANGE))
     {
-        return true;
+        return 0;
     }
 
     switch (param->type)
     {
-        CASE_CHECK_RANGE(PARAM_INT8, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_INT16, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_INT32, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_INT64, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_UINT8, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_UINT16, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_UINT32, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_UINT64, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_FLOAT, pCurValue, param->pMinValue, param->pMaxValue);
-        CASE_CHECK_RANGE(PARAM_DOUBLE, pCurValue, param->pMinValue, param->pMaxValue);
-
-    case PARAM_STARING:
-        if (strlen(pCurValue) < param->length)
-        {
-            ret = true;
-        }
-
-        break;
-
-    default:
-        return false; // 不支持的参数类型
-    }
-
-    return ret;
-}
-
-/**
-  * @brief      设置参数的当前值
-  *
-  * @param      param   参数信息
-  * @param      value   当前值
-  * @return     true   成功
-  * @return     false  失败
-  */
-bool Param_SetParamValue(const ParamInfo_t *param, const void *value)
-{
-    if (param == NULL || !ValidateIntRange(param, value))
-    {
-        return false; // 参数验证失败
-    }
-
-    if (param->type != PARAM_STARING)
-    {
-        memcpy(param->pCurValue, value, param->length);
-    }
-    else
-    {
-        strcpy(param->pCurValue, value);
-    }
-
-    if (param->pfnCallback != NULL)
-    {
-        param->pfnCallback(param);
-    }
-
-    return true;
-}
-
-/**
-  * @brief      重置参数恢复位缺省值
-  *
-  * @param      param 参数信息
-  * @return     true   成功
-  * @return     false  失败
-  */
-bool Param_ResetParamValue(const ParamInfo_t *param)
-{
-    if (param != NULL && (param->attr & PARAM_ATTR_RESET))
-    {
-        if (param->type != PARAM_STARING)
-        {
-            memcpy(param->pCurValue, param->pDefValue, param->length);
-        }
-        else
-        {
-            strcpy(param->pCurValue, param->pDefValue);
-        }
-
-        if (param->pfnCallback != NULL)
-        {
-            param->pfnCallback(param);
-        }
-
-        return true;
-    }
-
-    return false;
-}
-
-static int UintParamPrintf(char *pout, uint8_t attr, uint64_t data, uint64_t def, uint64_t min, uint64_t max)
-{
-    char *p = pout;
-    p += sprintf(p, "\tcur:%u\n", data);
-
-    if (attr & PARAM_ATTR_RESET)
-    {
-        p += sprintf(p, "\tdef:%u\n", def);
-    }
-
-    if (attr & PARAM_ATTR_RANGE)
-    {
-        p += sprintf(p, "\tmin:%u\n", min);
-        p += sprintf(p, "\tmax:%u\n", max);
-    }
-
-    return p - pout;
-}
-
-static int IntParamPrintf(char *pout, uint8_t attr, int64_t data, int64_t def, int64_t min, int64_t max)
-{
-    char *p = pout;
-    p += sprintf(p, "\tcur:%d\n", data);
-
-    if (attr & PARAM_ATTR_RESET)
-    {
-        p += sprintf(p, "\tdef:%d\n", def);
-    }
-
-    if (attr & PARAM_ATTR_RANGE)
-    {
-        p += sprintf(p, "\tmin:%d\n", min);
-        p += sprintf(p, "\tmax:%d\n", max);
-    }
-
-    return p - pout;
-}
-
-static int DoubleParamPrintf(char *pout, uint8_t attr, double data, double def, double min, double max)
-{
-    char *p = pout;
-    p += sprintf(p, "\tcur:%f\n", data);
-
-    if (attr & PARAM_ATTR_RESET)
-    {
-        p += sprintf(p, "\tdef:%f\n", def);
-    }
-
-    if (attr & PARAM_ATTR_RANGE)
-    {
-        p += sprintf(p, "\tmin:%f\n", min);
-        p += sprintf(p, "\tmax:%f\n", max);
-    }
-
-    return p - pout;
-}
-
-/**
-  * @brief      参数序列化为字符串
-  *
-  * @param[out] pout      输出buf
-  * @param[in]  paramInfo 参数信息
-  * @return     0,成功; -1,失败
-  */
-int Param_Sprintf(char *pout, const ParamInfo_t *paramInfo)
-{
-    char *p = pout;
-    ParamMemInfo_t pParamMem;
-
-    if (pout == NULL || paramInfo == NULL)
-    {
-        return -1;
-    }
-
-    p += sprintf(p, "[%d]:\n", paramInfo->id);
-    p += sprintf(p, "\tname:%s\n", paramInfo->pszName);
-    p += sprintf(p, "\ttype:%d\n", paramInfo->type);
-    p += sprintf(p, "\tlength:%d\n", paramInfo->length);
-    p += sprintf(p, "\tattr:");
-
-    if (paramInfo->attr & PARAM_ATTR_WRITE)
-    {
-        p += sprintf(p, "w");
-    }
-
-    if (paramInfo->attr & PARAM_ATTR_READ)
-    {
-        p += sprintf(p, "r");
-    }
-
-    if (paramInfo->attr & PARAM_ATTR_RESET)
-    {
-        p += sprintf(p, "s");
-    }
-
-    if (paramInfo->attr & PARAM_ATTR_RANGE)
-    {
-        p += sprintf(p, "m");
-    }
-
-    p += sprintf(p, "\n");
-
-    ParamInfoToParamMemInfo(&pParamMem, paramInfo);
-
-    switch (pParamMem.type)
-    {
     case PARAM_INT8:
-        p += IntParamPrintf(p, paramInfo->attr, pParamMem.curValue.s8val, pParamMem.defValue.s8val, pParamMem.minValue.s8val, pParamMem.maxValue.s8val);
+        if (pval->s64val < *param->unMinValuePtr.pInt8)
+        {
+            return -1;
+        }
+        else if (pval->s64val > *param->unMaxValuePtr.pInt8)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_INT16:
-        p += IntParamPrintf(p, paramInfo->attr, pParamMem.curValue.s16val, pParamMem.defValue.s16val, pParamMem.minValue.s16val, pParamMem.maxValue.s16val);
+        if (pval->s64val < *param->unMinValuePtr.pInt16)
+        {
+            return -1;
+        }
+        else if (pval->s64val > *param->unMaxValuePtr.pInt16)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_INT32:
-        p += IntParamPrintf(p, paramInfo->attr, pParamMem.curValue.s32val, pParamMem.defValue.s32val, pParamMem.minValue.s32val, pParamMem.maxValue.s32val);
+        if (pval->s64val < *param->unMinValuePtr.pInt32)
+        {
+            return -1;
+        }
+        else if (pval->s64val > *param->unMaxValuePtr.pInt32)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_INT64:
-        p += IntParamPrintf(p, paramInfo->attr, pParamMem.curValue.s64val, pParamMem.defValue.s64val, pParamMem.minValue.s64val, pParamMem.maxValue.s64val);
+        if (pval->s64val < *param->unMinValuePtr.pInt64)
+        {
+            return -1;
+        }
+        else if (pval->s64val > *param->unMaxValuePtr.pInt64)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_UINT8:
-        p += UintParamPrintf(p, paramInfo->attr, pParamMem.curValue.u8val, pParamMem.defValue.u8val, pParamMem.minValue.u8val, pParamMem.maxValue.u8val);
+        if (pval->u64val < *param->unMinValuePtr.pUint8)
+        {
+            return -1;
+        }
+        else if (pval->u64val > *param->unMaxValuePtr.pUint8)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_UINT16:
-        p += UintParamPrintf(p, paramInfo->attr, pParamMem.curValue.u16val, pParamMem.defValue.u16val, pParamMem.minValue.u16val, pParamMem.maxValue.u16val);
+        if (pval->u64val < *param->unMinValuePtr.pUint16)
+        {
+            return -1;
+        }
+        else if (pval->u64val > *param->unMaxValuePtr.pUint16)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_UINT32:
-        p += UintParamPrintf(p, paramInfo->attr, pParamMem.curValue.u32val, pParamMem.defValue.u32val, pParamMem.minValue.u32val, pParamMem.maxValue.u32val);
+        if (pval->u64val < *param->unMinValuePtr.pUint32)
+        {
+            return -1;
+        }
+        else if (pval->u64val > *param->unMaxValuePtr.pUint32)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_UINT64:
-        p += UintParamPrintf(p, paramInfo->attr, pParamMem.curValue.u64val, pParamMem.defValue.u64val, pParamMem.minValue.u64val, pParamMem.maxValue.u64val);
+        if (pval->u64val < *param->unMinValuePtr.pUint64)
+        {
+            return -1;
+        }
+        else if (pval->u64val > *param->unMaxValuePtr.pUint64)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_FLOAT:
-        p += DoubleParamPrintf(p, paramInfo->attr, pParamMem.curValue.fval, pParamMem.defValue.fval, pParamMem.minValue.fval, pParamMem.maxValue.fval);
+        if (pval->fVal < *param->unMinValuePtr.pFloat)
+        {
+            return -1;
+        }
+        else if (pval->fVal > *param->unMaxValuePtr.pFloat)
+        {
+            return 1;
+        }
         break;
 
     case PARAM_DOUBLE:
-        p += DoubleParamPrintf(p, paramInfo->attr, pParamMem.curValue.dval, pParamMem.defValue.dval, pParamMem.minValue.dval, pParamMem.maxValue.dval);
+        if (pval->fVal < *param->unMinValuePtr.pDouble)
+        {
+            return -1;
+        }
+        else if (pval->fVal > *param->unMaxValuePtr.pDouble)
+        {
+            return 1;
+        }
         break;
 
-    case PARAM_STARING:
-        p += sprintf(p, "\tcur:%s\n", pParamMem.curValue.szVal);
-
-        if (paramInfo->attr & PARAM_ATTR_RESET)
+    case PARAM_STRING:
+        if (strlen(pval->str) < *param->unMinValuePtr.pStringLength)
         {
-            p += sprintf(p, "\tdef:%s\n", pParamMem.defValue.szVal);
+            return -1;
         }
-
-        if (paramInfo->attr & PARAM_ATTR_RANGE)
+        else if (strlen(pval->str) > *param->unMaxValuePtr.pStringLength)
         {
-            p += sprintf(p, "\tmin:%d\n", pParamMem.minValue.u64val);
-            p += sprintf(p, "\tmax:%d\n", pParamMem.maxValue.u64val);
+            return 1;
         }
-
         break;
-
     default:
-        break;
+        return -2;
     }
 
     return 0;
+}
+
+static int ValidateRangeByVoid(const ParamInfo_t *param, const void *pval)
+{
+    Value_u uValue;
+
+    switch (param->type)
+    {
+    case PARAM_INT8:
+        uValue.s64val = *(PARAM_INT8_T *)pval;
+        break;
+
+    case PARAM_INT16:
+        uValue.s64val = *(PARAM_INT16_T *)pval;
+        break;
+
+    case PARAM_INT32:
+        uValue.s64val = *(PARAM_INT32_T *)pval;
+        break;
+
+    case PARAM_INT64:
+        uValue.s64val = *(PARAM_INT64_T *)pval;
+        break;
+
+    case PARAM_UINT8:
+        uValue.s64val = *(PARAM_UINT8_T *)pval;
+        break;
+
+    case PARAM_UINT16:
+        uValue.s64val = *(PARAM_UINT16_T *)pval;
+        break;
+
+    case PARAM_UINT32:
+        uValue.s64val = *(PARAM_UINT32_T *)pval;
+        break;
+
+    case PARAM_UINT64:
+        uValue.s64val = *(PARAM_UINT64_T *)pval;
+        break;
+
+    case PARAM_FLOAT:
+        uValue.fVal = *(PARAM_FLOAT_T *)pval;
+        break;
+
+    case PARAM_DOUBLE:
+        uValue.fVal = *(PARAM_DOUBLE_T *)pval;
+        break;
+
+    case PARAM_STRING:
+        memcpy(uValue.str, pval, strlen(pval) > PARAM_STRING_MAX_LENGTH ? PARAM_STRING_MAX_LENGTH - 1 : strlen(pval));
+        break;
+    default:
+        return -2;
+    }
+
+    return ValidateRange(param, &uValue);
+}
+
+/**
+  * @brief      设置新的参数值
+  *
+  * @attention  字符串类型参数的 PARAM_MIN_MAX 的处理选项和 PARAM_NONE 一样
+  * @param      param   参数信息
+  * @param      value   新的参数值
+  * @param      opt     超出范围的处理：PARAM_NONE,参数不变；PARAM_DEF,参数恢复默认；PARAM_MIN_MAX,参数取最大最小值
+  * @return     0,修改成功；-1,新的字符串长度小于最小限制值；1,新的字符串长度大于最大限制值，其他，错误
+  */
+int Param_SetNewValue(const ParamInfo_t *param, const void *value, uint8_t opt)
+{
+    int ret;
+
+    if (param == NULL)
+    {
+        return -2; // 参数验证失败
+    }
+
+    ret = ValidateRangeByVoid(param, value);
+
+    if (ret != 0)
+    {
+        if (opt == PARAM_DEF)
+        {
+            ResetParamValue(param);
+        }
+        else if (opt == PARAM_MIN_MAX)
+        {
+            ret == -1 ? ResetParamMinValue(param) : ResetParamMaxValue(param);
+        }
+
+        return ret;
+    }
+
+    if (param->type != PARAM_STRING)
+    {
+        memcpy(param->unCurValuePtr.pVoid, value, param->length);
+    }
+    else
+    {
+        strcpy(param->unCurValuePtr.pString, value);
+    }
+
+    return 0;
+}
+
+/**
+  * @brief      重置参数为缺省值
+  *
+  * @attention  无可重置权限的参数不能恢复为缺省值
+  * @param      param 参数信息
+  * @return     true   成功
+  * @return     false  失败
+  */
+bool Param_ResetDefaultValue(const ParamInfo_t *param)
+{
+    return ResetParamValue(param);
+}
+
+/**
+  * @brief      重置参数为最小值
+  * 
+  * @attention  字符串类型参数该功能无效
+  * @param      param 参数信息
+  * @return     true   成功
+  * @return     false  失败
+  */
+bool Param_ResetMinValue(const ParamInfo_t *param)
+{
+    return ResetParamMinValue(param);
+}
+
+/**
+  * @brief      重置参数为最大值
+  * 
+  * @attention  字符串类型参数该功能无效
+  * @param      param 参数信息
+  * @return     true   成功
+  * @return     false  失败
+  */
+bool Param_ResetMaxValue(const ParamInfo_t *param)
+{
+    return ResetParamMaxValue(param);
 }
 
 static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
@@ -844,7 +679,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         int64_t val = 0;
         pbuf = UnSerializeInt(pbuf, &val, param->length);
-        *(PARAM_INT8_T *)param->pCurValue = (PARAM_INT8_T)val;
+        *param->unCurValuePtr.pInt8 = (PARAM_INT8_T)val;
     }
     break;
 
@@ -852,7 +687,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         int64_t val = 0;
         pbuf = UnSerializeInt(pbuf, &val, param->length);
-        *(PARAM_INT16_T *)param->pCurValue = (PARAM_INT16_T)val;
+        *param->unCurValuePtr.pInt16 = (PARAM_INT16_T)val;
     }
     break;
 
@@ -860,7 +695,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         int64_t val = 0;
         pbuf = UnSerializeInt(pbuf, &val, param->length);
-        *(PARAM_INT32_T *)param->pCurValue = (PARAM_INT32_T)val;
+        *param->unCurValuePtr.pInt32 = (PARAM_INT32_T)val;
     }
     break;
 
@@ -868,7 +703,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         int64_t val = 0;
         pbuf = UnSerializeInt(pbuf, &val, param->length);
-        *(PARAM_INT64_T *)param->pCurValue = (PARAM_INT64_T)val;
+        *param->unCurValuePtr.pInt64 = (PARAM_INT64_T)val;
     }
     break;
 
@@ -876,7 +711,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         uint64_t val = 0;
         pbuf = UnSerializeUint(pbuf, &val, param->length);
-        *(PARAM_UINT8_T *)param->pCurValue = (PARAM_UINT8_T)val;
+        *param->unCurValuePtr.pUint8 = (PARAM_UINT8_T)val;
     }
     break;
 
@@ -884,7 +719,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         uint64_t val = 0;
         pbuf = UnSerializeUint(pbuf, &val, param->length);
-        *(PARAM_UINT16_T *)param->pCurValue = (PARAM_UINT16_T)val;
+        *param->unCurValuePtr.pUint16 = (PARAM_UINT16_T)val;
     }
     break;
 
@@ -892,7 +727,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         uint64_t val = 0;
         pbuf = UnSerializeUint(pbuf, &val, param->length);
-        *(PARAM_UINT32_T *)param->pCurValue = (PARAM_UINT32_T)val;
+        *param->unCurValuePtr.pUint32= (PARAM_UINT32_T)val;
     }
     break;
 
@@ -900,20 +735,20 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
     {
         uint64_t val = 0;
         pbuf = UnSerializeUint(pbuf, &val, param->length);
-        *(PARAM_UINT64_T *)param->pCurValue = (PARAM_UINT64_T)val;
+        *param->unCurValuePtr.pUint64 = (PARAM_UINT64_T)val;
     }
     break;
 
     case PARAM_FLOAT:
-        pbuf = UnSerializeFloat(pbuf, (PARAM_FLOAT_T *)param->pCurValue);
+        pbuf = UnSerializeFloat(pbuf, param->unCurValuePtr.pFloat);
         break;
 
     case PARAM_DOUBLE:
-        pbuf = UnSerializeDouble(pbuf, (PARAM_DOUBLE_T *)param->pCurValue);
+        pbuf = UnSerializeDouble(pbuf, param->unCurValuePtr.pDouble);
         break;
 
-    case PARAM_STARING:
-        memcpy(param->pCurValue, &pbuf[0], PARAM_STRING_MAX_LENGTH);
+    case PARAM_STRING:
+        memcpy(param->unCurValuePtr.pString, &pbuf[0], PARAM_STRING_MAX_LENGTH);
         break;
 
     default:
@@ -932,18 +767,18 @@ static uint8_t *MoveBufToBase(uint8_t *pbuf, uint32_t length)
 /**
   * @brief      加载数据
   *
-  * @attention  使用前确保函数 Param_SetCallBackFun 设置了加载回调处理函数
   * @note       该操作会校验参数的合法性（取值范围）
   * @param      manager 参数表管理句柄
+  * @param      pfnLoadCallback 加载回调函数
   * @param      pfnCheckError   参数不合法时触发回调函数
   * @return     0,成功; -1,失败
   */
-int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
+int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckError_cb pfnCheckError)
 {
-    uint8_t buf[sizeof(ParamVal_u) + 5];
+    uint8_t buf[sizeof(ParamInfo_t) + PARAM_STRING_MAX_LENGTH];
     uint8_t *ptr = buf;
 
-    if (manager == NULL || manager->pfnSaveCallback == NULL)
+    if (manager == NULL || pfnLoadCallback == NULL)
     {
         return -1;
     }
@@ -961,7 +796,7 @@ int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
     {
         length = sizeof(buf) - (ptr - buf);
 
-        if (manager->pfnLoadCallback(ptr, &length, &isFinish) != 0)
+        if (pfnLoadCallback(ptr, &length, &isFinish) != 0)
         {
             return -2;
         }
@@ -976,9 +811,10 @@ int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
 
 #if PARAM_USE_KEY_VALUE
 
-        while (length >= 3)
+        while (length > PARAM_SUPPORT_NUM)
         {
-            ptr = UnSerializeUint(ptr, &key, PARAM_SUPPORT_NUM);
+            UnSerializeUint(ptr, &key, PARAM_SUPPORT_NUM);
+            
 #if PARAM_SUPPORT_NUM == PARAM_SUPPORT_16
             id = (key >> 4) & 0x0F;
             paramLength = key & 0x0F;
@@ -995,6 +831,9 @@ int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
                 break;
             }
 
+            ptr += PARAM_SUPPORT_NUM;
+            length -= PARAM_SUPPORT_NUM;
+
             pParamInfo = (ParamInfo_t *)FindParamByID(manager, id);
 
             if (pParamInfo == NULL)
@@ -1008,7 +847,7 @@ int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
             ptr += paramLength;
             length -= paramLength;
 
-            if (!ValidateIntRange(pParamInfo, pParamInfo->pCurValue))
+            if (0 != ValidateRangeByVoid(pParamInfo, pParamInfo->unCurValuePtr.pVoid))
             {
                 if (pfnCheckError != NULL)
                 {
@@ -1031,7 +870,7 @@ int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
             ParamInfoFormStream(pParamInfo, ptr);
             ptr += pParamInfo->length;
 
-            if (!ValidateIntRange(pParamInfo, pParamInfo->pCurValue))
+            if (0 != ValidateRangeByVoid(pParamInfo, pParamInfo->unCurValuePtr.pVoid))
             {
                 if (pfnCheckError != NULL)
                 {
@@ -1045,6 +884,7 @@ int Param_Load(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
 
 #endif
         ptr = MoveBufToBase(ptr, ptr - buf);
+        ptr += length;
     } while (!isFinish);
 
     return 0;
@@ -1055,47 +895,47 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
     switch (param->type)
     {
     case PARAM_INT8:
-        pbuf = SerializeInt(pbuf, *(PARAM_INT8_T *)param->pCurValue, param->length);
+        pbuf = SerializeInt(pbuf, *(PARAM_INT8_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_INT16:
-        pbuf = SerializeInt(pbuf, *(PARAM_INT16_T *)param->pCurValue, param->length);
+        pbuf = SerializeInt(pbuf, *(PARAM_INT16_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_INT32:
-        pbuf = SerializeInt(pbuf, *(PARAM_INT32_T *)param->pCurValue, param->length);
+        pbuf = SerializeInt(pbuf, *(PARAM_INT32_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_INT64:
-        pbuf = SerializeInt(pbuf, *(PARAM_INT64_T *)param->pCurValue, param->length);
+        pbuf = SerializeInt(pbuf, *(PARAM_INT64_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_UINT8:
-        pbuf = SerializeUint(pbuf, *(PARAM_UINT8_T *)param->pCurValue, param->length);
+        pbuf = SerializeUint(pbuf, *(PARAM_UINT8_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_UINT16:
-        pbuf = SerializeUint(pbuf, *(PARAM_UINT16_T *)param->pCurValue, param->length);
+        pbuf = SerializeUint(pbuf, *(PARAM_UINT16_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_UINT32:
-        pbuf = SerializeUint(pbuf, *(PARAM_UINT32_T *)param->pCurValue, param->length);
+        pbuf = SerializeUint(pbuf, *(PARAM_UINT32_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_UINT64:
-        pbuf = SerializeUint(pbuf, *(PARAM_UINT64_T *)param->pCurValue, param->length);
+        pbuf = SerializeUint(pbuf, *(PARAM_UINT64_T *)param->unCurValuePtr.pVoid, param->length);
         break;
 
     case PARAM_FLOAT:
-        pbuf = SerializeFloat(pbuf, *(PARAM_FLOAT_T *)param->pCurValue);
+        pbuf = SerializeFloat(pbuf, *(PARAM_FLOAT_T *)param->unCurValuePtr.pVoid);
         break;
 
     case PARAM_DOUBLE:
-        pbuf = SerializeDouble(pbuf, *(PARAM_DOUBLE_T *)param->pCurValue);
+        pbuf = SerializeDouble(pbuf, *(PARAM_DOUBLE_T *)param->unCurValuePtr.pVoid);
         break;
 
-    case PARAM_STARING:
-        memcpy(&pbuf[0], param->pCurValue, PARAM_STRING_MAX_LENGTH);
+    case PARAM_STRING:
+        memcpy(&pbuf[0], param->unCurValuePtr.pString, PARAM_STRING_MAX_LENGTH);
         break;
 
     default:
@@ -1108,22 +948,22 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
 /**
   * @brief      保存数据
   *
-  * @attention  使用前确保函数 Param_SetCallBackFun 设置了保存回调处理函数
   * @note       参数在保存时会对参数校验合法性（取值范围）
   * @param      manager 参数表管理句柄
+  * @param      pfnSaveCallback 保存回调函数
   * @param      pfnCheckError   参数不合法时触发回调函数
   * @return     0,成功; -1,失败
   */
-int Param_Save(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
+int Param_Save(ParamManager_t *manager, pfnSave_cb pfnSaveCallback, pfnCheckError_cb pfnCheckError)
 {
-    uint8_t buf[sizeof(ParamVal_u) + 8];
+    uint8_t buf[sizeof(ParamInfo_t) + PARAM_STRING_MAX_LENGTH];
     uint8_t *ptr = buf;
     uint16_t length = 0;
 #if PARAM_USE_KEY_VALUE
     uint64_t key = 0;
 #endif
 
-    if (manager == NULL || manager->pfnSaveCallback == NULL)
+    if (manager == NULL || pfnSaveCallback == NULL)
     {
         return -1;
     }
@@ -1143,8 +983,7 @@ int Param_Save(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
         ptr = SerializeUint(ptr, key, PARAM_SUPPORT_NUM);
         length += PARAM_SUPPORT_NUM;
 #endif
-
-        if (!ValidateIntRange(&manager->pParamTable[i], manager->pParamTable[i].pCurValue))
+        if (0 != ValidateRangeByVoid(&manager->pParamTable[i], manager->pParamTable[i].unCurValuePtr.pVoid))
         {
             if (pfnCheckError != NULL)
             {
@@ -1155,13 +994,13 @@ int Param_Save(ParamManager_t *manager, pfnCheckError_cb pfnCheckError)
         length = ParamInfoToStream(&buf[length], &manager->pParamTable[i]);
         ptr += length;
 
-        if (manager->pfnSaveCallback(buf, (ptr - buf), false) != 0)
+        if (pfnSaveCallback(buf, (ptr - buf), false) != 0)
         {
             return -2;
         }
     }
 
-    if (manager->pfnSaveCallback(buf, 0, true) != 0)
+    if (pfnSaveCallback(buf, 0, true) != 0)
     {
         return -2;
     }
