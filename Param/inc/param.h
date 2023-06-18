@@ -64,6 +64,44 @@
     const type##_T min_##name = minVal;\
     const type##_T max_##name = maxVal;
 
+/**
+  * @brief  为已定义的变量定义参数相关信息
+  * 
+  * @param  name 参数名（变量名）
+  * @param  type 参数类型 @enum ParamType_e 取值
+  */
+#define PARAM_DEFINE_BIND_DAT(name, type)   \
+    enum {PARAM_TYPE_##name = type};\
+    enum {PARAM_INIT_ATTR_##name = 0};
+
+/**
+  * @brief  为已定义的变量定义参数相关信息, 具有默认值
+  * 
+  * @param  name 参数名（变量名）
+  * @param  type 参数类型 @enum ParamType_e 取值
+  * @param  defVal 默认值
+  */
+#define PARAM_DEFINE_BIND_DAT_DEF(name, type, defVal)   \
+    enum {PARAM_TYPE_##name = type};\
+    enum {PARAM_INIT_ATTR_##name = (PARAM_ATTR_RESET)};\
+    const type##_T def_##name = defVal;
+
+/**
+  * @brief  为已定义的变量定义参数相关信息, 具有默认值和范围校验
+  * 
+  * @param  name 参数名（变量名）
+  * @param  type 参数类型 @enum ParamType_e 取值
+  * @param  defVal 默认值
+  * @param  minVal 最小值
+  * @param  maxVal 最大值
+  */
+#define PARAM_DEFINE_BIND_DAT_RANGE(name, type, defVal, minVal, maxVal)   \
+    enum {PARAM_TYPE_##name = type};\
+    enum {PARAM_INIT_ATTR_##name = (PARAM_ATTR_RANGE | PARAM_ATTR_RESET)};\
+    const type##_T def_##name = defVal;\
+    const type##_T min_##name = minVal;\
+    const type##_T max_##name = maxVal;
+
 #if PARAM_USE_STRING_TYPE
 /**
   * @brief  定义字符串参数
@@ -77,7 +115,7 @@
     char name[length] = {defVal};\
 
 /**
-  * @brief  定义字符串参数
+  * @brief  定义字符串参数, 具有默认值
   * 
   * @param  name 参数名（变量名）
   * @param  length 字符串预留最大长度（包括结束符'\0'）
@@ -102,12 +140,50 @@
     const char def_##name[] = {defVal};\
     const param_size_t min_##name = minLength;\
     const param_size_t max_##name = length - 1;
+
+
+/**
+  * @brief  为已定义的字符串变量定义参数相关信息
+  * 
+  * @param  name 参数名（变量名）
+  * @param  length 字符串预留最大长度（包括结束符'\0'）
+  * @param  initVal 初始值
+  */
+#define PARAM_DEFINE_BIND_STR(name, length)   \
+    enum {PARAM_INIT_ATTR_##name = 0};
+
+/**
+  * @brief  为已定义的字符串变量定义参数相关信息, 具有默认值
+  * 
+  * @param  name 参数名（变量名）
+  * @param  length 字符串预留最大长度（包括结束符'\0'）
+  * @param  defVal 默认值
+  */
+#define PARAM_DEFINE_BIND_STR_DEF(name, length, defVal)   \
+    enum {PARAM_INIT_ATTR_##name = (PARAM_ATTR_RESET)};\
+    const char def_##name[] = {defVal};
+
+/**
+  * @brief  为已定义的字符串变量定义参数相关信息, 具有默认值和长度校验
+  * 
+  * @param  name 参数名（变量名）
+  * @param  length 字符串预留最大长度（包括结束符'\0'）
+  * @param  defVal 默认值
+  * @param  minLength 最小长度
+  */
+#define PARAM_DEFINE_BIND_STR_RANGE(name, length, defVal, minLength)   \
+    enum {PARAM_INIT_ATTR_##name = (PARAM_ATTR_RANGE | PARAM_ATTR_RESET)};\
+    const char def_##name[] = {defVal};\
+    const param_size_t min_##name = minLength;\
+    const param_size_t max_##name = length - 1;
+
 #endif
 
 #if (PARAM_NAME_MAX_LENGTH > 1)
 /**
   * @brief  普通参数注册
   * 
+  * @attention 对应的宏定义: PARAM_DEFINE_DAT / PARAM_DEFINE_DAT_DEF / PARAM_DEFINE_DAT_RANGE
   * @param  _id   参数唯一 ID
   * @param  _name 参数名（变量名）
   * @param  _attr 参数读/写属性组合（PARAM_ATTR_READ/PARAM_ATTR_WRITE）
@@ -141,10 +217,52 @@
                                           .unDefValuePtr.pVoid = (void *)&def_##_name, \
                                           .unMinValuePtr.pVoid = (void *)&min_##_name, \
                                           .unMaxValuePtr.pVoid = (void *)&max_##_name}
+
+
+/**
+  * @brief  为数值变量绑定普通参数进行注册
+  * 
+  * @attention 对应的宏定义: PARAM_DEFINE_BIND_DAT / PARAM_DEFINE_BIND_DAT_DEF / PARAM_DEFINE_BIND_DAT_RANGE
+  * @param  _id   参数唯一 ID
+  * @param  _name 参数名（变量名）
+  * @param  variable 需要绑定的已定义变量
+  * @param  _attr 参数读/写属性组合（PARAM_ATTR_READ/PARAM_ATTR_WRITE）
+  */
+#define PARAM_ITEM_DAT_BIND(_id, _name, _variable, _attr)  { .pszName = #_name, \
+                                          .id = _id, \
+                                          .type = PARAM_TYPE_##_name, \
+                                          .length = sizeof(_variable), \
+                                          .attr = (_attr | PARAM_INIT_ATTR_##_name), \
+                                          .unCurValuePtr.pVoid = &(_variable), \
+                                          .unDefValuePtr.pVoid = NULL, \
+                                          .unMinValuePtr.pVoid = NULL, \
+                                          .unMaxValuePtr.pVoid = NULL}
+
+#define PARAM_ITEM_DAT_DEF_BIND(_id, _name, _variable, _attr)  { .pszName = #_name, \
+                                          .id = _id, \
+                                          .type = PARAM_TYPE_##_name, \
+                                          .length = sizeof(_variable), \
+                                          .attr = (_attr | PARAM_INIT_ATTR_##_name), \
+                                          .unCurValuePtr.pVoid = &(_variable), \
+                                          .unDefValuePtr.pVoid = (void *)&def_##_name, \
+                                          .unMinValuePtr.pVoid = NULL, \
+                                          .unMaxValuePtr.pVoid = NULL}
+
+#define PARAM_ITEM_DAT_RANGE_BIND(_id, _name, _variable, _attr)  { .pszName = #_name, \
+                                          .id = _id, \
+                                          .type = PARAM_TYPE_##_name, \
+                                          .length = sizeof(_variable), \
+                                          .attr = (_attr | PARAM_INIT_ATTR_##_name), \
+                                          .unCurValuePtr.pVoid = &(_variable), \
+                                          .unDefValuePtr.pVoid = (void *)&def_##_name, \
+                                          .unMinValuePtr.pVoid = (void *)&min_##_name, \
+                                          .unMaxValuePtr.pVoid = (void *)&max_##_name}
+
 #if PARAM_USE_STRING_TYPE
 /**
   * @brief  字符串参数注册
   * 
+  * @attention 对应的宏定义: PARAM_DEFINE_STR / PARAM_DEFINE_DAT_STR / PARAM_DEFINE_DAT_STR
   * @param  _id   参数唯一 ID
   * @param  _name 参数名（变量名）
   * @param  _attr 参数读/写属性组合（PARAM_ATTR_READ/PARAM_ATTR_WRITE）
@@ -175,6 +293,45 @@
                                           .length = sizeof(_name), \
                                           .attr = (_attr | PARAM_INIT_ATTR_##_name), \
                                           .unCurValuePtr.pVoid = &_name, \
+                                          .unDefValuePtr.pVoid = (void *)&def_##_name, \
+                                          .unMinValuePtr.pVoid = (void *)&min_##_name, \
+                                          .unMaxValuePtr.pVoid = (void *)&max_##_name}
+
+/**
+  * @brief  为字符串变量绑定字符串参数进行注册
+  * 
+  * @attention 对应的宏定义: PARAM_DEFINE_BIND_STR / PARAM_DEFINE_BIND_DAT_STR / PARAM_DEFINE_BIND_DAT_STR
+  * @param  _id   参数唯一 ID
+  * @param  _name 参数名（变量名）
+  * @param  variable 需要绑定的已定义字符串变量
+  * @param  _attr 参数读/写属性组合（PARAM_ATTR_READ/PARAM_ATTR_WRITE）
+  */
+#define PARAM_ITEM_STR_BIND(_id, _name, _variabl, _attr)  { .pszName = #_name, \
+                                          .id = _id, \
+                                          .type = PARAM_STRING, \
+                                          .length = sizeof(_variabl), \
+                                          .attr = (_attr | PARAM_INIT_ATTR_##_name), \
+                                          .unCurValuePtr.pVoid = _variabl, \
+                                          .unDefValuePtr.pVoid = NULL, \
+                                          .unMinValuePtr.pVoid = NULL, \
+                                          .unMaxValuePtr.pVoid = NULL}
+
+#define PARAM_ITEM_STR_DEF_BIND(_id, _name, _variabl, _attr)  { .pszName = #_name, \
+                                          .id = _id, \
+                                          .type = PARAM_STRING, \
+                                          .length = sizeof(_variabl), \
+                                          .attr = (_attr | PARAM_INIT_ATTR_##_name), \
+                                          .unCurValuePtr.pVoid = _variabl, \
+                                          .unDefValuePtr.pVoid = (void *)&def_##_name, \
+                                          .unMinValuePtr.pVoid = NULL, \
+                                          .unMaxValuePtr.pVoid = NULL}
+
+#define PARAM_ITEM_STR_RANGE_BIND(_id, _name, _variabl, _attr)  { .pszName = #_name, \
+                                          .id = _id, \
+                                          .type = PARAM_STRING, \
+                                          .length = sizeof(_variabl), \
+                                          .attr = (_attr | PARAM_INIT_ATTR_##_name), \
+                                          .unCurValuePtr.pVoid = _variabl, \
                                           .unDefValuePtr.pVoid = (void *)&def_##_name, \
                                           .unMinValuePtr.pVoid = (void *)&min_##_name, \
                                           .unMaxValuePtr.pVoid = (void *)&max_##_name}
@@ -271,6 +428,18 @@
                 const extern type##_T max_##name;
 
 /**
+  * @brief  绑定的数值参数声明
+  * 
+  * @param  name 参数名（变量名）
+  * @param  type 参数类型 @enum ParamType_e 取值
+  */
+#define PARAM_EXTERN_BIND_DAT(name, type)        \
+                typedef type##_T param_##name##_t;\
+                const extern type##_T def_##name;\
+                const extern type##_T min_##name;\
+                const extern type##_T max_##name;
+
+/**
   * @brief  字符串参数声明
   * 
   * @param  name 参数名（变量名）
@@ -279,6 +448,18 @@
 #define PARAM_EXTERN_STR(name, length)      \
                 typedef char* param_##name##_t;\
                 extern char name[length];\
+                const extern char def_##name[];\
+                const extern param_size_t min_##name;\
+                const extern param_size_t max_##name;
+
+/**
+  * @brief  绑定的字符串参数声明
+  * 
+  * @param  name 参数名（变量名）
+  * @param  length 字符串预留最大长度
+  */
+#define PARAM_EXTERN_BIND_STR(name, length)      \
+                typedef char* param_##name##_t;\
                 const extern char def_##name[];\
                 const extern param_size_t min_##name;\
                 const extern param_size_t max_##name;

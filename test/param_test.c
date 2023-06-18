@@ -4,6 +4,15 @@
 #include "unity.h"
 #include "param.h"
 
+typedef struct
+{
+    uint16_t test1;
+    float test2;
+    char str[20];
+}ParamDemo_t;
+
+static ParamDemo_t sg_tTest;
+
 PARAM_DEFINE_DAT (g_test_1, PARAM_INT16, 10);
 PARAM_DEFINE_DAT_DEF (g_test_2, PARAM_UINT16, 20);
 PARAM_DEFINE_DAT_RANGE (g_test_float, PARAM_FLOAT, 3.15, -10, 10);
@@ -26,6 +35,11 @@ PARAM_DEFINE_DAT_RANGE (g_test_u32, PARAM_UINT32, 1000, 900, 10000);
 PARAM_DEFINE_DAT_RANGE (g_test_u64, PARAM_UINT64, 8000, 100, 1000000);
 #endif
 
+PARAM_DEFINE_BIND_DAT_RANGE(sg_tTest_test1, PARAM_UINT16, 20, 10, 2000); // 为即将绑定的变量定义相关参数信息
+PARAM_DEFINE_BIND_DAT(sg_tTest_test2, PARAM_FLOAT); // 为即将绑定的变量定义相关参数信息，初值为sg_tTest 变量定义时的初值
+#if PARAM_USE_STRING_TYPE
+PARAM_DEFINE_BIND_STR_RANGE(sg_tTest_str, sizeof(sg_tTest.str), "const-zpc", 6);
+#endif
 
 ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT(1, g_test_1, PARAM_ATTR_WR),
@@ -48,6 +62,11 @@ ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT_RANGE(12, g_test_u32, PARAM_ATTR_NONE),
 #if PARAM_USE_64_BIT_LENGTH
     PARAM_ITEM_DAT_RANGE(13, g_test_u64, PARAM_ATTR_WR),
+#endif
+    PARAM_ITEM_DAT_RANGE_BIND(14, sg_tTest_test1, sg_tTest.test1, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_BIND(15, sg_tTest_test2, sg_tTest.test2, PARAM_ATTR_WR),
+#if PARAM_USE_STRING_TYPE
+    PARAM_ITEM_STR_RANGE_BIND(16, sg_tTest_str, sg_tTest.str, PARAM_ATTR_WR),
 #endif
 };
 

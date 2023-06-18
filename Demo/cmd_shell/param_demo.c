@@ -66,6 +66,14 @@ int OnSaveCallback(const uint8_t *pBuf, uint16_t len, bool isFinish)
 
 /******************************************  模拟储存设备操作  ******************************************************/
 
+typedef struct
+{
+    uint16_t test1;
+    float test2;
+    char str[20];
+}ParamDemo_t;
+
+static ParamDemo_t sg_tTest;
 
 
 PARAM_DEFINE_DAT (g_test, PARAM_INT16, 10);
@@ -76,6 +84,9 @@ PARAM_DEFINE_DAT_RANGE (g_test_4, PARAM_INT8, 8, -10, 10);
 PARAM_DEFINE_DAT_RANGE (g_test_5, PARAM_UINT32, 620, 500, 10000);
 PARAM_DEFINE_DAT_RANGE (g_test_6, PARAM_UINT8, 45, 5, 100);
 PARAM_DEFINE_DAT_RANGE (g_test_7, PARAM_INT64, 5, -542, 5450);
+PARAM_DEFINE_BIND_DAT_RANGE(sg_tTest_test1, PARAM_UINT16, 20, 10, 2000); // 为即将绑定的变量定义相关参数信息
+PARAM_DEFINE_BIND_DAT(sg_tTest_test2, PARAM_FLOAT); // 为即将绑定的变量定义相关参数信息，初值为sg_tTest 变量定义时的初值
+PARAM_DEFINE_BIND_STR_RANGE(sg_tTest_str, sizeof(sg_tTest.str), "const-zpc", 6);
 
 ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT(1, g_test, PARAM_ATTR_WR),
@@ -86,6 +97,9 @@ ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT_RANGE(6, g_test_5, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(7, g_test_6, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(8, g_test_7, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_RANGE_BIND(9, sg_tTest_test1, sg_tTest.test1, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_BIND(10, sg_tTest_test2, sg_tTest.test2, PARAM_ATTR_WR),
+    PARAM_ITEM_STR_RANGE_BIND(11, sg_tTest_str, sg_tTest.str, PARAM_ATTR_WR),
 };
 
 
