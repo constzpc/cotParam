@@ -849,6 +849,7 @@ int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckErro
     uint16_t paramLength = 0;
     uint16_t id = 0;
     ParamInfo_t *pParamInfo;
+    uint8_t keyLength = 0;
 #if PARAM_USE_KEY_VALUE
     uint64_t key = 0;
 #endif
@@ -871,10 +872,16 @@ int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckErro
         ptr = buf;
 
 #if PARAM_USE_KEY_VALUE
-
-        while (length > PARAM_SUPPORT_NUM)
+        if (keyLength == 0)
         {
-            UnSerializeUint(ptr, &key, PARAM_SUPPORT_NUM);
+            keyLength = ptr[0];
+            ptr++;
+            length -= 1;
+        }
+
+        while (length > keyLength)
+        {
+            UnSerializeUint(ptr, &key, keyLength);
             
 #if PARAM_SUPPORT_NUM == PARAM_SUPPORT_16
             id = (key >> 4) & 0x0F;
@@ -887,13 +894,13 @@ int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckErro
             paramLength = key & 0xFFF;
 #endif
 
-            if (length < (paramLength + PARAM_SUPPORT_NUM))
+            if (length < (paramLength + keyLength))
             {
                 break;
             }
 
-            ptr += PARAM_SUPPORT_NUM;
-            length -= PARAM_SUPPORT_NUM;
+            ptr += keyLength;
+            length -= keyLength;
 
             pParamInfo = (ParamInfo_t *)FindParamByID(manager, id);
 
@@ -1033,6 +1040,15 @@ int Param_Save(ParamManager_t *manager, pfnSave_cb pfnSaveCallback, pfnCheckErro
     {
         return -1;
     }
+
+#if PARAM_USE_KEY_VALUE
+    buf[0] = PARAM_SUPPORT_NUM;
+
+    if (pfnSaveCallback(buf, 1, false) != 0)
+    {
+        return -2;
+    }
+#endif
 
     for (int i = 0; i < manager->count; i++)
     {
