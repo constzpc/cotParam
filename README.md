@@ -9,15 +9,16 @@
    > - 支持定义普通参数，有缺省值，最小值和最大值限制
    >
 2. 采用宏定义快速对参数进行定义、注册和管理
-3. 支持基本类型参数和字符串参数
-4. 支持序列化和反序列化操作，可在本地储存设备保存/读取二进制数据
+3. 支持已定义变量做为参数进行管理，如全局变量或者结构体成员变量
+4. 支持基本类型参数和字符串参数
+5. 支持序列化和反序列化操作，可在本地储存设备保存/读取二进制数据
 
    > - 支持键值对的方式储存，即使后期版本迭代对参数表删除/插入数据时也能向下兼容
    > - 支持非键值对的方式储存，适合小容量的储存设备，序列化后的数据内容少，但是后期版本迭代对参数表删除或插入数据时不能向下兼容，只有通过在参数表后添加参数才能向下兼容
    > - 通过多次读写储存设备分别加载参数和保存参数，更兼容小内存的平台使用（多次调用回调函数处理）
    > - 支持在数据加载或保存时当参数当前值不合法（超出范围）触发错误处理回调函数，有上层应用程序决定如何处理（可以恢复默认值）
    >
-5. 支持功能配置裁剪
+6. 支持功能配置裁剪
 
    > - 根据不同的平台，可以对部分功能裁剪，或者修改配置适用于不同容量的芯片开发
    > - 键值对的方式储存：向下兼容较好
@@ -35,11 +36,14 @@
 PARAM_DEFINE_DAT (g_test, PARAM_INT16, 10);
 PARAM_DEFINE_DAT_DEF (g_test_2, PARAM_UINT16, 20);
 PARAM_DEFINE_DAT_RANGE (g_test_3, PARAM_DOUBLE, 3.15, -10, 10);
-PARAM_DEFINE_STR_RANGE (g_test_str, 10, "abcdef", 5, 10);
+PARAM_DEFINE_STR_RANGE (g_test_str, 10, "abcdef", 5);
 PARAM_DEFINE_DAT_RANGE (g_test_4, PARAM_INT8, 8, -10, 10);
 PARAM_DEFINE_DAT_RANGE (g_test_5, PARAM_UINT32, 620, 500, 10000);
 PARAM_DEFINE_DAT_RANGE (g_test_6, PARAM_UINT8, 45, 5, 100);
 PARAM_DEFINE_DAT_RANGE (g_test_7, PARAM_INT64, 5, -542, 5450);
+PARAM_DEFINE_BIND_DAT_RANGE(sg_tTest_test1, PARAM_UINT16, 20, 10, 2000); // 为即将绑定的变量定义相关参数信息
+PARAM_DEFINE_BIND_DAT(sg_tTest_test2, PARAM_FLOAT); // 为即将绑定的变量定义相关参数信息，初值为sg_tTest 变量定义时的初值
+PARAM_DEFINE_BIND_STR_RANGE(sg_tTest_str, sizeof(sg_tTest.str), "const-zpc", 6);// 为即将绑定的变量定义相关参数信息，初值为sg_tTest 变量定义时的初值
 
 ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT(1, g_test, PARAM_ATTR_WR),
@@ -50,6 +54,9 @@ ParamInfo_t sg_ParamTable[] = {
     PARAM_ITEM_DAT_RANGE(6, g_test_5, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(7, g_test_6, PARAM_ATTR_WR),
     PARAM_ITEM_DAT_RANGE(8, g_test_7, PARAM_ATTR_READ), // 只读
+    PARAM_ITEM_DAT_RANGE_BIND(9, sg_tTest_test1, sg_tTest.test1, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_BIND(10, sg_tTest_test2, sg_tTest.test2, PARAM_ATTR_WR),
+    PARAM_ITEM_STR_RANGE_BIND(11, sg_tTest_str, sg_tTest.str, PARAM_ATTR_WR),
 };
 
 ```
