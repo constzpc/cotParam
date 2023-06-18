@@ -1,81 +1,180 @@
 # 轻量级参数管理框架(C语言)
 
 ## 介绍
-1.  采用表驱动方式统一管理所有参数，包括缺省值、最小值和最大值等
 
-2.  采用宏定义快速注册和添加参数进行管理
+1. 采用表驱动方式统一管理所有参数，包括缺省值、最小值和最大值等
 
-3.  支持基本类型参数和字符串参数
+   > - 支持定义普通参数，无缺省值、最小值和最大值限制
+   > - 支持定义普通参数，有缺省值，但无最小值和最大值限制
+   > - 支持定义普通参数，有缺省值，最小值和最大值限制
+   >
+2. 采用宏定义快速对参数进行定义、注册和管理
+3. 支持基本类型参数和字符串参数
+4. 支持序列化和反序列化操作，可在本地储存设备保存/读取二进制数据
 
-4.  支持两种方式序列化和反序列化操作，便于选择在本地保存二进制数据或者跨设备通信使用
-    > - 其中本地化序列化方式又可以选择“键值对”或者“值”保存，“键值对”方式更有利于向下兼容，即使迭代中删除数据也能正常获取；
-    > - 本地化序列化又可以采用“编码”压缩的方式，最大限度压缩数据，因此采用“编码”时如果参数数值不同，序列化后的数据长度也有可能不同
-    > - 跨设备序列化数据默认采用“键值对”和“编码”压缩的方式，同时增加了其他便于解析的信息，方便其他设备使用同样的代码进行反序列化
+   > - 支持键值对的方式储存，即使后期版本迭代对参数表删除/插入数据时也能向下兼容
+   > - 支持非键值对的方式储存，适合小容量的储存设备，序列化后的数据内容少，但是后期版本迭代对参数表删除或插入数据时不能向下兼容，只有通过在参数表后添加参数才能向下兼容
+   > - 通过多次读写储存设备分别加载参数和保存参数，更兼容小内存的平台使用（多次调用回调函数处理）
+   > - 支持在数据加载或保存时当参数当前值不合法（超出范围）触发错误处理回调函数，有上层应用程序决定如何处理（可以恢复默认值）
+   >
+5. 支持功能配置裁剪
+
+   > - 根据不同的平台，可以对部分功能裁剪，或者修改配置适用于不同容量的芯片开发
+   > - 键值对的方式储存：向下兼容较好
+   > - 可以选择只支持基本类型的参数储存功能，如字符串类型参数和64位长度的参数可裁剪
+   >
 
 ## 软件架构
+
+## 使用说明
 
 定义参数表
 
 ```c
-PARAM_DEFINE (test, PARAM_INT16, 10, -100, 100);
-PARAM_DEFINE (test_2, PARAM_UINT16, 20, 0, 100);
-PARAM_DEFINE (test_3, PARAM_DOUBLE, 3.15, -10, 10);
-PARAM_DEFINE_STR (test_str, 10, "abcdef");
-PARAM_DEFINE (test_4, PARAM_INT8, 8, -10, 10);
-PARAM_DEFINE (test_5, PARAM_UINT32, 620, 500, 10000);
-PARAM_DEFINE (test_6, PARAM_UINT8, 4, 5, 100);
-PARAM_DEFINE (test_7, PARAM_INT64, 5, -542, 5450);
+
+PARAM_DEFINE_DAT (g_test, PARAM_INT16, 10);
+PARAM_DEFINE_DAT_DEF (g_test_2, PARAM_UINT16, 20);
+PARAM_DEFINE_DAT_RANGE (g_test_3, PARAM_DOUBLE, 3.15, -10, 10);
+PARAM_DEFINE_STR_RANGE (g_test_str, 10, "abcdef", 5, 10);
+PARAM_DEFINE_DAT_RANGE (g_test_4, PARAM_INT8, 8, -10, 10);
+PARAM_DEFINE_DAT_RANGE (g_test_5, PARAM_UINT32, 620, 500, 10000);
+PARAM_DEFINE_DAT_RANGE (g_test_6, PARAM_UINT8, 45, 5, 100);
+PARAM_DEFINE_DAT_RANGE (g_test_7, PARAM_INT64, 5, -542, 5450);
 
 ParamInfo_t sg_ParamTable[] = {
-    PARAM_REG(1, test, PARAM_INT16, PARAM_ATTR_ALL),
-    PARAM_REG(2, test_2, PARAM_UINT16, PARAM_ATTR_READ),
-    PARAM_REG(3, test_3, PARAM_DOUBLE, PARAM_ATTR_READ | PARAM_ATTR_WRITE),
-    PARAM_STR_REG(4, test_str, PARAM_ATTR_READ | PARAM_ATTR_WRITE),
-    PARAM_REG(5, test_4, PARAM_INT8, PARAM_ATTR_READ),
-    PARAM_REG(6, test_5, PARAM_UINT32, PARAM_ATTR_READ),
-    PARAM_REG(7, test_6, PARAM_UINT8, PARAM_ATTR_READ),
-    PARAM_REG(8, test_7, PARAM_INT64, PARAM_ATTR_WRITE),
+    PARAM_ITEM_DAT(1, g_test, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_DEF(2, g_test_2, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_RANGE(3, g_test_3, PARAM_ATTR_WR),
+    PARAM_ITEM_STR_RANGE(4, g_test_str, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_RANGE(5, g_test_4, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_RANGE(6, g_test_5, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_RANGE(7, g_test_6, PARAM_ATTR_WR),
+    PARAM_ITEM_DAT_RANGE(8, g_test_7, PARAM_ATTR_READ), // 只读
 };
+
 ```
 
-Demo 的结果展示（具体编译demo后使用）
+通过宏去操作参数示例片段代码
+
 ```c
-Init:
-  id    name            type     length   attr     val        def        min        max
- 1      test            int16_t    2      wr       10         10         -100       100
- 2      test_2          uint16_t   2      r        20         20         0          100
- 3      test_3          double     8      wr       3.150000   3.150000   -10.000000 10.000000
- 4      test_str        string     10     wr       abcdef     abcdef
- 5      test_4          int8_t     1      r        8          8          -10        10
- 6      test_5          uint32_t   4      r        620        620        500        10000
- 7      test_6          uint8_t    1      r        4          4          5          100
- 8      test_7          int64_t    8      w        5          0          5          0
-
-"普通序列化": [37] -> 0a 00 14 00 9a 99 49 40 9a 99 49 40 0a 61 62 63 64 65 66 00 00 00 00 08 6c 02 00 00 04 05 00 00 00 00 00 00 00
-"编码序列化": [26] -> 14 14 9a 99 49 40 9a 99 49 40 0a 61 62 63 64 65 66 00 00 00 00 08 ec 04 04 0a
-"增加键值序列化": [53] -> 11 00 0a 00 25 00 14 00 39 00 9a 99 49 40 9a 99 49 40 4a 00 0a 61 62 63 64 65 66 00 00 00 00 50 00 08 66 00 6c 02 00 00 74 00 04 83 00 05 00 00 00 00 00 00 00 
-"增加键值并编码序列化": [42] -> 11 00 14 25 00 14 39 00 9a 99 49 40 9a 99 49 40 4a 00 0a 61 62 63 64 65 66 00 00 00 00 50 00 08 66 00 ec 04 74 00 04 83 00 0a
+// 首先需要在头文件声明
+PARAM_EXTERN_DAT(g_test, PARAM_INT16);
+PARAM_EXTERN_DAT(g_test_2, PARAM_UINT16);
+PARAM_EXTERN_DAT(g_test_3, PARAM_DOUBLE);
+PARAM_EXTERN_STR(g_test_str, 10);
+PARAM_EXTERN_DAT(g_test_4, PARAM_INT8);
+PARAM_EXTERN_DAT(g_test_5, PARAM_UINT32);
+PARAM_EXTERN_DAT(g_test_6, PARAM_UINT8);
+PARAM_EXTERN_DAT(g_test_7, PARAM_INT64);
 
 
-"跨设备的序列化（携带基础信息）": [50] -> 11 00 80 14 25 00 80 14 39 00 80 9a 99 49 40 9a 99 49 40 4a 00 80 0a 61 62 63 64 65 66 00 00 00 00 50 00 80 08 66 00 80 ec 04 74 00 80 04 83 00 80 0a
+//函数中使用
+int main()
+{
+//方法一：
+    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
+    PARAM_DAT_SET_NEW_VALUE(g_test_6, 50, PARAM_NONE);
 
-"跨设备的序列化（携带所有信息）": [174] -> 11 00 ff 14 74 65 73 74 00 ff 14 c7 01 c8 01 25 00 ff 14 74 65 73 74 5f 32 00 01 14 00 64 39 00 ff 9a 99 49 40 9a 99 49 40 74 65 73 74 5f 33 00 03 9a 99 49 40 9a 99 49 40 00 00 20 c1 00 00 20 c1 00 00 20 41 00 00 20 41 4a 00 ff 0a 61 62 63 64 65 66 00 00 00 00 74 65 73 74 5f 73 74 72 00 03 0a 61 62 63 64 65 66 00 08 f6 0a 50 00 ff 08 74 65 73 74 5f 34 00 01 08 f6 0a 66 00 ff ec 04 74 65 73 74 5f 35 00 01 ec 04 f4 03 90 4e 74 00 ff 04 74 65 73 74 5f 36 00 01 04 05 64 83 00 ff 0a 74 65 73 74 5f 37 00 02 0a bb 08 94 55
+    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
+    PARAM_DAT_SET_NEW_VALUE(g_test_6, 50, PARAM_DEF);
 
+    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
+    PARAM_DAT_SET_NEW_VALUE(g_test_6, 150, PARAM_MIN_MAX);
+
+
+//方法二：
+    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
+    g_test_6 = 50;
+    PARAM_DAT_CHECK_RANGE(g_test_6, PARAM_NONE);
+
+    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
+    g_test_6 = 50;
+    PARAM_DAT_CHECK_RANGE(g_test_6, PARAM_DEF);
+
+    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
+    g_test_6 = 150;
+    PARAM_DAT_CHECK_RANGE(g_test_6, PARAM_MIN_MAX);
+}
 ```
 
-## 使用说明
-1.  通过函数 Param_ModifyById、Param_ModifyByName 限制修改参数
-2.  调用函数 Param_Serialize 对参数序列化, 保存至储存芯片中
-3.  从储存芯片读取数据后，调用 Param_Parse 反序列化得到参数，同时进行参数范围校验
+通过函数去操作参数示例片段代码
+
+```c
+//函数中使用
+int main()
+{
+    PARAM_UINT16_T tmp;
+  
+//方法一：
+    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
+    tmp = 50;
+    Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_NONE);
+
+    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
+    tmp = 50;
+    Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_DEF);
+
+    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
+    tmp = 150;
+    Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_MIN_MAX);
+
+
+//方法二：
+    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
+    g_test_6 = 50;
+    Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_NONE);
+
+    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
+    g_test_6 = 50;
+    Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_DEF);
+
+    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
+    g_test_6 = 150;
+    Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_MIN_MAX);
+}
+```
+
+序列化 Demo 的结果展示
+
+```base
+# 配置最多支持 15 个参数时加载参数时分多次读取/保存操作打印日志
+load param：
+        read: [21] -> 12 0a 00 22 14 00 38 33 33 33 33 33 33 09 40 4a 61 62 63 64 65
+        read: [21] -> 66 00 00 00 00 51 08 64 6c 02 00 00 71 2d 88 05 00 00 00 00 00 
+save param：
+        save: [3] -> 12 0a 00
+        save: [3] -> 22 14 00
+        save: [9] -> 38 33 33 33 33 33 33 09 40
+        save: [11] -> 4a 61 62 63 64 65 66 00 00 00 00
+        save: [2] -> 51 08
+        save: [5] -> 64 6c 02 00 00
+        save: [2] -> 71 2d
+        save: [9] -> 88 05 00 00 00 00 00 00 00
+
+# 配置最多支持 15 个参数时的序列化内容及长度
+"键值对序列化": [44] -> 12 0a 00 22 14 00 38 33 33 33 33 33 33 09 40 4a 61 62 63 64 65 66 00 00 00 00 51 08 64 6c 02 00 00 71 2d 88 05 00 00 00 00 00 00 00
+"序列化": [36] -> 50 00 14 00 33 33 33 33 33 33 09 40 67 5f 74 65 73 74 5f 36 00 00 00 6c 02 00 00 2d 05 00 00 00 00 00 00 00 
+
+# 配置最多支持 256 个参数时的序列化内容及长度
+"键值对序列化": [52] -> 02 01 0a 00 02 02 14 00 08 03 33 33 33 33 33 33 09 40 0a 04 61 62 63 64 65 66 00 00 00 00 01 05 08 04 06 6c 02 00 00 01 07 2d 08 08 05 00 00 00 00 00 00 00
+"序列化": [36] -> 50 00 14 00 33 33 33 33 33 33 09 40 67 5f 74 65 73 74 5f 36 00 00 00 6c 02 00 00 2d 05 00 00 00 00 00 00 00 
+
+# 配置最多支持 4096 个参数时的序列化内容及长度
+"键值对序列化": [60] -> 02 10 00 0a 00 02 20 00 14 00 08 30 00 33 33 33 33 33 33 09 40 0a 40 00 61 62 63 64 65 66 00 00 00 00 01 50 00 08 04 60 00 6c 02 00 00 01 70 00 2d 08 80 00 05 00 00 00 00 00 00 00
+"序列化": [36] -> 50 00 14 00 33 33 33 33 33 33 09 40 67 5f 74 65 73 74 5f 36 00 00 00 6c 02 00 00 2d 05 00 00 00 00 00 00 00 
+
+```
 
 ## demo样式
+
 博客：
 
 [轻量级参数管理框架（C语言）](https://blog.csdn.net/qq_24130227/article/details/129233836?spm=1001.2014.3001.5501)
 
 ## 关于作者
-1.  CSDN 博客 [大橙子疯](https://blog.csdn.net/qq_24130227?spm=1010.2135.3001.5343)
-2.  联系邮箱 const_zpc@163.com
-3.  了解更多可关注微信公众号
+
+1. CSDN 博客 [大橙子疯](https://blog.csdn.net/qq_24130227?spm=1010.2135.3001.5343)
+2. 联系邮箱 const_zpc@163.com
+3. 了解更多可关注微信公众号
 
 ![大橙子疯嵌入式](微信公众号.jpg)

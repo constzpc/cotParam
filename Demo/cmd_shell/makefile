@@ -7,8 +7,8 @@ INC+=-I${CURR_DIR_PATH}/../../Param/inc
 INC+=-I${CURR_DIR_PATH}/
 
 SRC+=${CURR_DIR_PATH}/../../Param/src/param.c
-SRC+=${CURR_DIR_PATH}/../../Param/src/stream.c
 SRC+=${CURR_DIR_PATH}/demo.c
+SRC+=${CURR_DIR_PATH}/param_demo.c
 
 
 AIM_NAME:=demo
