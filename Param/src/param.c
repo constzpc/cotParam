@@ -904,7 +904,7 @@ int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckErro
 
             pParamInfo = (ParamInfo_t *)FindParamByID(manager, id);
 
-            if (pParamInfo == NULL)
+            if (pParamInfo == NULL || paramLength != pParamInfo->length)
             {
                 ptr += paramLength;
                 length -= paramLength;
