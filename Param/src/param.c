@@ -805,7 +805,7 @@ static uint16_t ParamInfoFormStream(ParamInfo_t *param, const uint8_t *pbuf)
 #endif
 #if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
-        memcpy(param->unCurValuePtr.pString, &pbuf[0], PARAM_STRING_MAX_LENGTH);
+        memcpy(param->unCurValuePtr.pString, &pbuf[0], param->length);
         break;
 #endif
     default:
@@ -904,7 +904,7 @@ int Param_Load(ParamManager_t *manager, pfnLoad_cb pfnLoadCallback, pfnCheckErro
 
             pParamInfo = (ParamInfo_t *)FindParamByID(manager, id);
 
-            if (pParamInfo == NULL)
+            if (pParamInfo == NULL || paramLength != pParamInfo->length)
             {
                 ptr += paramLength;
                 length -= paramLength;
@@ -1004,7 +1004,7 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, ParamInfo_t *param)
 #endif
 #if PARAM_USE_STRING_TYPE
     case PARAM_STRING:
-        memcpy(&pbuf[0], param->unCurValuePtr.pString, PARAM_STRING_MAX_LENGTH);
+        memcpy(&pbuf[0], param->unCurValuePtr.pString, param->length);
         break;
 #endif
     default:
