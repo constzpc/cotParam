@@ -6,10 +6,10 @@ endif
 
 
 GCC:=gcc
-INC+=-I${CURR_DIR_PATH}/../../Param/inc
+INC+=-I${CURR_DIR_PATH}/../../
 INC+=-I${CURR_DIR_PATH}/
 
-SRC+=${CURR_DIR_PATH}/../../Param/src/cot_param.c
+SRC+=${CURR_DIR_PATH}/../../cot_param.c
 SRC+=${CURR_DIR_PATH}/demo.c
 SRC+=${CURR_DIR_PATH}/param_demo.c
 
