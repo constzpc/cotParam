@@ -2,174 +2,215 @@
 
 ## 介绍
 
-1. 采用表驱动方式统一管理所有参数，包括缺省值、最小值和最大值等
+### 管理方式
 
-   > - 支持定义普通参数，无缺省值、最小值和最大值限制
-   > - 支持定义普通参数，有缺省值，但无最小值和最大值限制
-   > - 支持定义普通参数，有缺省值，最小值和最大值限制
-   >
-2. 采用宏定义快速对参数进行定义、注册和管理
-3. 支持已定义变量做为参数进行管理，如全局变量或者结构体成员变量
-4. 支持基本类型参数和字符串参数
-5. 支持序列化和反序列化操作，可在本地储存设备保存/读取二进制数据
+通过将已定义变量添加到参数表进行参数的统一管理，包括缺省值、最小值和最大值等，方便进行参数校验纠正处理。
 
-   > - 支持键值对的方式储存，即使后期版本迭代对参数表删除/插入数据时也能向下兼容
-   > - 支持非键值对的方式储存，适合小容量的储存设备，序列化后的数据内容少，但是后期版本迭代对参数表删除或插入数据时不能向下兼容，只有通过在参数表后添加参数才能向下兼容
-   > - 通过多次读写储存设备分别加载参数和保存参数，更兼容小内存的平台使用（多次调用回调函数处理）
-   > - 支持在数据加载或保存时当参数当前值不合法（超出范围）触发错误处理回调函数，有上层应用程序决定如何处理（可以恢复默认值）
-   >
-6. 支持功能配置裁剪
+> 已定义变量也包括结构体的成员变量，均为**全局变量**。
 
-   > - 根据不同的平台，可以对部分功能裁剪，或者修改配置适用于不同容量的芯片开发
-   > - 键值对的方式储存：向下兼容较好
-   > - 可以选择只支持基本类型的参数储存功能，如字符串类型参数和64位长度的参数可裁剪
-   >
+- 支持将已定义变量绑定为参数，无缺省值、最小值和最大值限制，适合于记录类型的参数
+- 支持将已定义变量绑定为参数，有缺省值，但无最小值和最大值限制，适合于配置类型的参数
+- 支持将已定义变量绑定为参数，有缺省值，最小值和最大值限制，适合于用户设置或者关键性类型的参数
 
-## 软件架构
+除此之外，还有参数名、属性等，方便配合UI或者参数的权限管理。
+
+同时若单个参数表无法满足参数数目或者参数分类管理，可定义多张参数表
+
+> 每张参数表中的参数ID唯一，不可重复；但不同参数表ID可以相同
+
+### 参数类型
+
+支持数值和字符串两种类型参数。
+
+> - 数值类型：`int`、`float`、`double` 等基本类型的参数
+> - 字符串类型：`char` 定义用来储存字符串的数组
+
+
+
+### 兼容性
+
+* [X] 提供了参数表的序列化和反序列化操作。
+
+> - 方便在本地储存设备（如flash、eeprom等）保存/读取二进制数据，甚至还可以跨设备传输
+> - 提供了两种方式：
+>   - 保存/加载：提供参数实际保存/加载的回调函数，通过多次触发回调函数完成参数的序列化保存、加载反序列化功能；适用于小内存的平台使用（不需要申请内存处理）
+>   - 序列化和反序列化：需要提前申请内存用来保存参数表序列化的数据或者读取即将反序列化的数据；一次性完成操作（需要申请较大的内存完成）
+
+* [X] 支持启用键值对功能
+
+> - 每个参数都需要指定唯一的ID，在后期版本迭代对参数表删除、插入或添加参数时也能向下兼容，不会影响其他参数。
+> - 启用键值对后序列化的数据长度也会比较大，因为每个参数序列化时包含了ID和长度信息
+
+
+### 可裁剪
+
+根据不同的平台，可以对部分功能裁剪，或者修改配置适用于不同容量的芯片进行开发。
+
+| 配置选项                        | 描述                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `COT_PARAM_USE_KEY_VALUE`     | 是否采用键值对方式序列化和反序列化参数数据                                                                                                                                                                                                                                                                                                             |
+| `COT_PARAM_USE_STRING_TYPE`   | 启用字符串参数类型                                                                                                                                                                                                                                                                                                                                     |
+| `COT_PARAM_USE_64_BIT_LENGTH` | 启用64bit的参数类型                                                                                                                                                                                                                                                                                                                                    |
+| `COT_PARAM_NAME_MAX_LENGTH`   | 参数名字最大定义长度，小于或等于1则禁用参数名功能                                                                                                                                                                                                                                                                                                      |
+| `COT_PARAM_STRING_MAX_LENGTH` | 字符串类型的参数取值最大定义长度（包括结束符），需启用 `COT_PARAM_USE_STRING_TYPE`                                                                                                                                                                                                                                                                   |
+| `COT_PARAM_SUPPORT_NUM`       | 单张参数表最多添加多少个参数，需启用 `COT_PARAM_USE_KEY_VALUE`，可选:<br />`COT_PARAM_SUPPORT_16`：ID取值范围0-15，即最多16个参数<br />`COT_PARAM_SUPPORT_256`：ID取值范围0-255，即最多256个参数<br /> `COT_PARAM_SUPPORT_4096`：ID取值范围0-4095，即最多4096个参数<br /><br />注：若没有启用 `COT_PARAM_USE_KEY_VALUE` 键值对方式，则无限制 |
+
+
+## 软件设计
+
+略
+
 
 ## 使用说明
 
-定义参数表
+### 参数表定义
+
 
 ```c
+typedef struct
+{
+    uint16_t test1;
+    float test2;
+    char str[12];
+}ParamDemo_t;
 
-PARAM_DEFINE_DAT (g_test, PARAM_INT16, 10);
-PARAM_DEFINE_DAT_DEF (g_test_2, PARAM_UINT16, 20);
-PARAM_DEFINE_DAT_RANGE (g_test_3, PARAM_DOUBLE, 3.15, -10, 10);
-PARAM_DEFINE_STR_RANGE (g_test_str, 10, "abcdef", 5);
-PARAM_DEFINE_DAT_RANGE (g_test_4, PARAM_INT8, 8, -10, 10);
-PARAM_DEFINE_DAT_RANGE (g_test_5, PARAM_UINT32, 620, 500, 10000);
-PARAM_DEFINE_DAT_RANGE (g_test_6, PARAM_UINT8, 45, 5, 100);
-PARAM_DEFINE_DAT_RANGE (g_test_7, PARAM_INT64, 5, -542, 5450);
-PARAM_DEFINE_BIND_DAT_RANGE(sg_tTest_test1, PARAM_UINT16, 20, 10, 2000); // 为即将绑定的变量定义相关参数信息
-PARAM_DEFINE_BIND_DAT(sg_tTest_test2, PARAM_FLOAT); // 为即将绑定的变量定义相关参数信息，初值为sg_tTest 变量定义时的初值
-PARAM_DEFINE_BIND_STR_RANGE(sg_tTest_str, sizeof(sg_tTest.str), "const-zpc", 6);// 为即将绑定的变量定义相关参数信息，初值为sg_tTest 变量定义时的初值
-
-ParamInfo_t sg_ParamTable[] = {
-    PARAM_ITEM_DAT(1, g_test, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_DEF(2, g_test_2, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_RANGE(3, g_test_3, PARAM_ATTR_WR),
-    PARAM_ITEM_STR_RANGE(4, g_test_str, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_RANGE(5, g_test_4, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_RANGE(6, g_test_5, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_RANGE(7, g_test_6, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_RANGE(8, g_test_7, PARAM_ATTR_READ), // 只读
-    PARAM_ITEM_DAT_RANGE_BIND(9, sg_tTest_test1, sg_tTest.test1, PARAM_ATTR_WR),
-    PARAM_ITEM_DAT_BIND(10, sg_tTest_test2, sg_tTest.test2, PARAM_ATTR_WR),
-    PARAM_ITEM_STR_RANGE_BIND(11, sg_tTest_str, sg_tTest.str, PARAM_ATTR_WR),
+static ParamDemo_t sg_tTest = {
+    .str = "sdf",
+    .test1 = 20,
+    .test2 = 567.4
 };
 
+int16_t g_test = 50;
+uint16_t g_test_2 = 20;
+double g_test_3 = 3.15;
+COT_PARAM_INT8_T g_test_4 = 8;
+COT_PARAM_UINT32_T g_test_5 = 620;
+COT_PARAM_UINT8_T g_test_6 = 45;
+COT_PARAM_INT64_T g_test_7 = 5;
+COT_PARAM_INT8_T g_sd = 2;
+COT_PARAM_INT64_T g_test_88 = 80;
+char g_test_str[15] = "abcdef";
+char g_str_des[13] = "EERR";
+char g_str_des_2[15] = "sdRR";
+char g_str_des_3[15] = "ewRR";
+
+cotParamInfo_t sg_ParamTable[] = {
+    COT_PARAM_ITEM_BIND(1, g_test, COT_PARAM_INT16, COT_PARAM_ATTR_WR),
+    COT_PARAM_ITEM_BIND_WITH_NAME(2, "g_test_2", g_test_2, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20),
+    COT_PARAM_ITEM_BIND(3, g_test_3, COT_PARAM_DOUBLE, COT_PARAM_ATTR_WR, 3.15, -2.15, 5.12),
+    COT_PARAM_ITEM_BIND(4, g_test_str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcdef", 0, sizeof(g_test_str)),
+    COT_PARAM_ITEM_BIND(5, g_test_4, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 8, -10, 10),
+    COT_PARAM_ITEM_BIND(6, g_test_5, COT_PARAM_UINT32, COT_PARAM_ATTR_WR, 620, 500, 10000),
+    COT_PARAM_ITEM_BIND(7, g_test_6, COT_PARAM_UINT8, COT_PARAM_ATTR_WR, 45, 5, 100),
+    COT_PARAM_ITEM_BIND(8, g_test_7, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
+    COT_PARAM_ITEM_BIND(9, sg_tTest.test1, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20, 10, 2000),
+    COT_PARAM_ITEM_BIND(10, sg_tTest.test2, COT_PARAM_FLOAT, COT_PARAM_ATTR_WR),
+    COT_PARAM_ITEM_BIND(11, sg_tTest.str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "const-zpc", 6, sizeof(sg_tTest.str)),
+    COT_PARAM_ITEM_BIND(12, g_test_88, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
+    COT_PARAM_ITEM_BIND(13, g_str_des, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WER45", 10, sizeof(g_str_des)),
+    COT_PARAM_ITEM_BIND(14, g_str_des_2, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WTG"),
+    COT_PARAM_ITEM_BIND(15, g_str_des_3, COT_PARAM_STRING, COT_PARAM_ATTR_WR),
+    COT_PARAM_ITEM_BIND(17, g_sd, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 5),
+};
+
+static cotParamManager_t sg_tParamManager;
+
+int mian()
+{
+    cotParam_Init(&sg_tParamManager, sg_ParamTable, COT_PARAM_TABLE_SIZE(sg_ParamTable));
+}
+
+
 ```
 
-通过宏去操作参数示例片段代码
+
+
+### 参数保存/加载
+
+1. 保存/加载方式（函数内部完成序列化和反序列化，逐步写入保存/读取加载）
 
 ```c
-// 首先需要在头文件声明
-PARAM_EXTERN_DAT(g_test, PARAM_INT16);
-PARAM_EXTERN_DAT(g_test_2, PARAM_UINT16);
-PARAM_EXTERN_DAT(g_test_3, PARAM_DOUBLE);
-PARAM_EXTERN_STR(g_test_str, 10);
-PARAM_EXTERN_DAT(g_test_4, PARAM_INT8);
-PARAM_EXTERN_DAT(g_test_5, PARAM_UINT32);
-PARAM_EXTERN_DAT(g_test_6, PARAM_UINT8);
-PARAM_EXTERN_DAT(g_test_7, PARAM_INT64);
 
-
-//函数中使用
-int main()
+// 所有参数校验出错时恢复默认处理
+int OnCheckErrorResetHandle(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e eCheckResult)
 {
-//方法一：
-    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
-    PARAM_DAT_SET_NEW_VALUE(g_test_6, 50, PARAM_NONE);
+    cotParam_SingleParamResetDefValue(pParamInfo);
+    return 0;
+}
 
-    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
-    PARAM_DAT_SET_NEW_VALUE(g_test_6, 50, PARAM_DEF);
+// 从储存设备多次读取
+int OnLoadCallback(uint8_t *pBuf, uint16_t *len, bool *pisFinish)
+{
+    uint16_t needReadLen = *len;
+    static uint32_t s_already_read_length = 0;
 
-    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
-    PARAM_DAT_SET_NEW_VALUE(g_test_6, 150, PARAM_MIN_MAX);
+    if (sg_length == s_offset)
+    {
+        *len = 0;
+        s_already_read_length = 0;
+        *pisFinish = true;
+        return 0;
+    }
+    else
+    {
+        *pisFinish = false;
+    }
 
+    if (sg_length - s_already_read_length < needReadLen)
+    {
+        needReadLen = sg_length - s_already_read_length ;
+    }
 
-//方法二：
-    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
-    g_test_6 = 50;
-    PARAM_DAT_CHECK_RANGE(g_test_6, PARAM_NONE);
+    *len = read(pBuf, needReadLen);
+    s_already_read_length += (*len);
 
-    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
-    g_test_6 = 50;
-    PARAM_DAT_CHECK_RANGE(g_test_6, PARAM_DEF);
-
-    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
-    g_test_6 = 150;
-    PARAM_DAT_CHECK_RANGE(g_test_6, PARAM_MIN_MAX);
+    return 0;
+}
+//函数中使用
+int LoadParam()
+{
+        cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
+        cotParam_Load(&sg_tParamManager, OnLoadCallback);
 }
 ```
 
-通过函数去操作参数示例片段代码
+
+
+2. 序列化/反序列化方式（一次性写入保存/读取加载）
 
 ```c
 //函数中使用
 int main()
 {
-    PARAM_UINT16_T tmp;
+#if 0
+    uint8_t buf[500];
   
-//方法一：
-    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
-    tmp = 50;
-    Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_NONE);
-
-    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
-    tmp = 50;
-    Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_DEF);
-
-    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
-    tmp = 150;
-    Param_SetNewValue(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &tmp, PARAM_MIN_MAX);
-
-
-//方法二：
-    // 对参数g_test_6设置新的值50，如果超出限定范围则不处理
-    g_test_6 = 50;
-    Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_NONE);
-
-    // 对参数g_test_6设置新的值50，如果超出限定范围则重置为默认值
-    g_test_6 = 50;
-    Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_DEF);
-
-    // 对参数g_test_6设置新的值150，如果超出限定范围则参数小于最小值则为最小值, 参数大于最大值则为最大值
-    g_test_6 = 150;
-    Param_CheckRange(Param_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), PARAM_MIN_MAX);
+    uint32_t length = cotParam_Serialize(&sg_tParamManager, buf);
+    write(buf, length);
+#else
+    uint8_t *p_buf = (uint8_t *)malloc(cotParam_GetSerializeSize(&sg_tParamManager));
+  
+    uint32_t length = cotParam_Serialize(&sg_tParamManager, p_buf);
+    write(p_buf, length);
+    free(p_buf);
+    p_buf = NULL;
+#endif
 }
 ```
 
-序列化 Demo 的结果展示
+### 校验处理
 
-```base
-# 配置最多支持 15 个参数时加载参数时分多次读取/保存操作打印日志
-load param：
-        read: [21] -> 12 0a 00 22 14 00 38 33 33 33 33 33 33 09 40 4a 61 62 63 64 65
-        read: [21] -> 66 00 00 00 00 51 08 64 6c 02 00 00 71 2d 88 05 00 00 00 00 00 
-save param：
-        save: [3] -> 12 0a 00
-        save: [3] -> 22 14 00
-        save: [9] -> 38 33 33 33 33 33 33 09 40
-        save: [11] -> 4a 61 62 63 64 65 66 00 00 00 00
-        save: [2] -> 51 08
-        save: [5] -> 64 6c 02 00 00
-        save: [2] -> 71 2d
-        save: [9] -> 88 05 00 00 00 00 00 00 00
+```c
+// 对某个变量参数进行范围校验，得到校验结果
+cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), &eCheckResult);
 
-# 配置最多支持 15 个参数时的序列化内容及长度
-"键值对序列化": [44] -> 12 0a 00 22 14 00 38 33 33 33 33 33 33 09 40 4a 61 62 63 64 65 66 00 00 00 00 51 08 64 6c 02 00 00 71 2d 88 05 00 00 00 00 00 00 00
-"序列化": [36] -> 50 00 14 00 33 33 33 33 33 33 09 40 67 5f 74 65 73 74 5f 36 00 00 00 6c 02 00 00 2d 05 00 00 00 00 00 00 00 
+// 对某个变量参数变更后（当前值已经变化）进行校验处理，若超出范围则恢复默认
+g_test_3 = 1000;
+cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), COT_PARAM_RESET_DEF);
 
-# 配置最多支持 256 个参数时的序列化内容及长度
-"键值对序列化": [52] -> 02 01 0a 00 02 02 14 00 08 03 33 33 33 33 33 33 09 40 0a 04 61 62 63 64 65 66 00 00 00 00 01 05 08 04 06 6c 02 00 00 01 07 2d 08 08 05 00 00 00 00 00 00 00
-"序列化": [36] -> 50 00 14 00 33 33 33 33 33 33 09 40 67 5f 74 65 73 74 5f 36 00 00 00 6c 02 00 00 2d 05 00 00 00 00 00 00 00 
-
-# 配置最多支持 4096 个参数时的序列化内容及长度
-"键值对序列化": [60] -> 02 10 00 0a 00 02 20 00 14 00 08 30 00 33 33 33 33 33 33 09 40 0a 40 00 61 62 63 64 65 66 00 00 00 00 01 50 00 08 04 60 00 6c 02 00 00 01 70 00 2d 08 80 00 05 00 00 00 00 00 00 00
-"序列化": [36] -> 50 00 14 00 33 33 33 33 33 33 09 40 67 5f 74 65 73 74 5f 36 00 00 00 6c 02 00 00 2d 05 00 00 00 00 00 00 00 
-
+// 对某个变量参数在需要变更前（当前值没有变化）进行校验处理，若新的值超出范围则不更新变量参数当前的值
+double tmp = 1000;
+cotParam_SingleParamUpdate(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), &tmp, COT_PARAM_RESET_NONE)
 ```
 
 ## demo样式
