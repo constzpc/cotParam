@@ -263,6 +263,7 @@ int cotParam_ResetDefault(const cotParamManager_t *pManager)
 /**
   * @brief      检查所有参数当前值的范围并对超出范围时进行处理
   * 
+  * @attention  如果参数有自定义校验方式，则只有满足范围校验成功的前提下才会执行自定义校验
   * @param      param 参数信息
   * @param      pfnCheckError 参数超出范围时的处理函数
   * @return     0,成功; -1,失败
@@ -286,6 +287,21 @@ int cotParam_Check(const cotParamManager_t* pManager, pfnCheckError_f pfnCheckEr
             {
                 pfnCheckError(&pManager->pParamTable[id], eCheckResult);
             }
+        }
+        else
+        {
+#if COT_PARAM_USE_CUSTOM_CHECK
+            if (pManager->pParamTable[id].pfnParamCheck != NULL)
+            {
+                if (pManager->pParamTable[id].pfnParamCheck(pManager->pParamTable[id].unCurValuePtr.pVoid) != 0)
+                {
+                    if (pfnCheckError != NULL)
+                    {
+                        pfnCheckError(&pManager->pParamTable[id], COT_PARAM_CHECK_OTHER_ERR);
+                    }
+                }
+            }
+#endif
         }
     }
 
@@ -646,6 +662,7 @@ static cotParamCheckRet_e ValidateRangeByVoid(const cotParamInfo_t *pParam, cons
   * @brief      校验当前参数值并进行处理
   *
   * @attention  字符串类型参数若设置了最长的长度，超长则会进行截断，但是小于最小长度时则不做处理
+  * @attention  该函数不会执行自定义校验
   * @param      pParam   参数信息
   * @param      eResetOpt 参数值超出范围的处理选项 @enum cotParamResetOpt_e
   * @return     0,成功; -1,失败
@@ -683,6 +700,7 @@ int cotParam_SingleParamCheckProcess(const cotParamInfo_t *pParam, cotParamReset
 /**
   * @brief      更新参数值同时进行校验处理
   *
+  * @attention  该函数不会执行自定义校验
   * @param      pParam    参数信息
   * @param      pNewValue 新的参数值
   * @param      eResetOpt 新的参数值超出范围的处理选项 @enum cotParamResetOpt_e
@@ -734,21 +752,49 @@ int cotParam_SingleParamUpdate(const cotParamInfo_t *pParam, const void *pNewVal
 }
 
 /**
+ * @brief      根据参数信息校验输入的值
+ * 
+ * @attention  如果参数有自定义校验方式，则只有满足范围校验成功的前提下才会执行自定义校验
+ * @param[in]  pParam    参数信息
+ * @param[in]  pValue    输入的参数值
+ * @param[out] peCheckResult 校验结果
+ * @return     0,成功; -1,失败
+ */
+int cotParam_SingleParamCheckInput(const cotParamInfo_t *pParam, const void *pValue, cotParamCheckRet_e *peCheckResult)
+{
+    if (pParam == NULL || pValue == NULL || peCheckResult == NULL)
+    {
+        return -1;
+    }
+
+    *peCheckResult = ValidateRangeByVoid(pParam, pValue);
+
+#if COT_PARAM_USE_CUSTOM_CHECK
+    if (*peCheckResult == COT_PARAM_CHECK_OK)
+    {
+        if (pParam->pfnParamCheck != NULL)
+        {
+            if (pParam->pfnParamCheck(pValue) != 0)
+            {
+                *peCheckResult = COT_PARAM_CHECK_OTHER_ERR;
+            }
+        }
+    }
+#endif
+    return 0;
+}
+
+/**
  * @brief      校验当前参数值
  * 
- * @param[in]  pParam 参数信息
+ * @attention  如果参数有自定义校验方式，则只有满足范围校验成功的前提下才会执行自定义校验
+ * @param[in]  pParam    参数信息
  * @param[out] peCheckResult 校验结果
  * @return     0,成功; -1,失败
  */
 int cotParam_SingleParamCheck(const cotParamInfo_t *pParam, cotParamCheckRet_e *peCheckResult)
 {
-    if (pParam == NULL || peCheckResult == NULL)
-    {
-        return -1;
-    }
-
-    *peCheckResult = ValidateRangeByVoid(pParam, pParam->unCurValuePtr.pVoid);
-    return 0;
+    return cotParam_SingleParamCheckInput(pParam, pParam->unCurValuePtr.pVoid, peCheckResult);
 }
 
 /**

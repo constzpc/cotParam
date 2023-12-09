@@ -79,7 +79,8 @@ typedef enum
 {
     COT_PARAM_CHECK_OK = 0,     // 校验成功 / 无最大最小值
     COT_PARAM_CHECK_OVER_MIN,   // 小于最小值 / 小于最小字符串长度
-    COT_PARAM_CHECK_OVER_MAX    // 大于最大值 / 大于最小字符串长度
+    COT_PARAM_CHECK_OVER_MAX,   // 大于最大值 / 大于最小字符串长度
+    COT_PARAM_CHECK_OTHER_ERR   // 其他错误, 即自定义校验出错
 } cotParamCheckRet_e;
 
 typedef enum
@@ -115,6 +116,8 @@ typedef union {
     void *pVoid;
 } cotParamTypePtr_u;
 
+typedef int (*cotParamCheck_f)(const void *pCurParam);
+
 /**
   * @brief  定义无内存的参数结构体信息
   * 
@@ -132,6 +135,9 @@ typedef struct stuParamInfo
     const cotParamTypePtr_u unDefValuePtr;  /*!< 默认值指针 */
     const cotParamTypePtr_u unMinValuePtr;  /*!< 最小值指针(字符串参数限制最小长度时需要 param_size_t 定义) */
     const cotParamTypePtr_u unMaxValuePtr;  /*!< 最大值指针(字符串参数限制最大长度时需要 param_size_t 定义) */
+#if COT_PARAM_USE_CUSTOM_CHECK
+    const cotParamCheck_f pfnParamCheck;    /*!< 自定义校验方式回调函数(返回0表示校验成功) */
+#endif
 } cotParamInfo_t;
 
 typedef int (*pfnCheckError_f)(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e eCheckResult);

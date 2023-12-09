@@ -64,6 +64,18 @@ COT_PARAM_UINT32_T g_test_u32 = 1000;
 COT_PARAM_UINT64_T g_test_u64 = 8000;
 #endif
 
+static int CheckTestS16(const void *pCurParam)
+{
+    const int16_t *p_test_s16 = (const int16_t *)pCurParam;
+
+    if ((*p_test_s16) % 2 != 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 cotParamInfo_t sg_ParamTable[] = {
     COT_PARAM_ITEM_BIND(1, g_test_1, COT_PARAM_INT16, COT_PARAM_ATTR_WR),
     COT_PARAM_ITEM_BIND(2, g_test_2, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20),
@@ -75,7 +87,7 @@ cotParamInfo_t sg_ParamTable[] = {
     COT_PARAM_ITEM_BIND(5, g_test_str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcdef", 5, 10),
 #endif
     COT_PARAM_ITEM_BIND(6, g_test_s8, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 10, -10, 15),
-    COT_PARAM_ITEM_BIND(7, g_test_s16, COT_PARAM_INT16, COT_PARAM_ATTR_WR, 100, -100, 3000),
+    COT_PARAM_ITEM_BIND(7, g_test_s16, COT_PARAM_INT16, COT_PARAM_ATTR_WR, 100, -100, 3000, CheckTestS16),
     COT_PARAM_ITEM_BIND(8, g_test_s32, COT_PARAM_INT32, COT_PARAM_ATTR_WR, 1000, -900, 10000),
 #if COT_PARAM_USE_64_BIT_LENGTH
     COT_PARAM_ITEM_BIND(9, g_test_s64, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 8000, -100, 1000000),
@@ -464,6 +476,25 @@ void test_CheckRange(void)
 #endif
 }
 
+void test_CheckCustomWay(void)
+{
+    cotParamCheckRet_e eCheckResult;
+
+    g_test_s16 = 200;
+    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
+    TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OK, eCheckResult);
+
+#if COT_PARAM_USE_CUSTOM_CHECK
+    g_test_s16 = 201;
+    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
+    TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OTHER_ERR, eCheckResult);
+#endif
+
+    g_test_s16 = 202;
+    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
+    TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OK, eCheckResult);
+}
+
 void test_SetNewValue(void)
 {
     COT_PARAM_UINT16_T tmp = 60;
@@ -544,6 +575,7 @@ int main(void)
     RUN_TEST(test_IterateParam);
     RUN_TEST(test_FindParam);
     RUN_TEST(test_CheckRange);
+    RUN_TEST(test_CheckCustomWay);
     RUN_TEST(test_SetNewValue);
     RUN_TEST(test_ResetValue);
 

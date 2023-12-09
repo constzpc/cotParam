@@ -23,6 +23,14 @@
 #define COT_PARAM_USE_KEY_VALUE         1
 
 /**
+  * @brief  使用参数自定义校验功能
+  * 
+  * @note   在校验取值范围成功后才会执行自定义校验
+  * 0,禁止; 1,使能
+  */
+#define COT_PARAM_USE_CUSTOM_CHECK      1
+
+/**
   * @brief  使用字符串参数类型
   * 0,禁止; 1,使能
   */
