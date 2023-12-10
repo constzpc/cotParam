@@ -155,7 +155,7 @@ extern int cotParam_SingleParamCheckProcess(const cotParamInfo_t *pParam, cotPar
 extern int cotParam_SingleParamUpdate(const cotParamInfo_t *pParam, const void *pNewValue, cotParamResetOpt_e eResetOpt);
 
 extern int cotParam_SingleParamCheckInput(const cotParamInfo_t *pParam, const void *pValue, cotParamCheckRet_e *peCheckResult);
-extern int cotParam_SingleParamCheck(const cotParamInfo_t *pParam, cotParamCheckRet_e *peCheckResult);
+extern int cotParam_SingleParamSelfCheck(const cotParamInfo_t *pParam, cotParamCheckRet_e *peCheckResult);
 extern int cotParam_SingleParamResetDefValue(const cotParamInfo_t *pParam);
 extern int cotParam_SingleParamResetMinValue(const cotParamInfo_t *pParam);
 extern int cotParam_SingleParamResetMaxValue(const cotParamInfo_t *pParam);

@@ -756,7 +756,7 @@ int cotParam_SingleParamUpdate(const cotParamInfo_t *pParam, const void *pNewVal
  * 
  * @attention  如果参数有自定义校验方式，则只有满足范围校验成功的前提下才会执行自定义校验
  * @param[in]  pParam    参数信息
- * @param[in]  pValue    输入的参数值
+ * @param[in]  pValue    输入的参数值，该变量的类型需要和该参数的类型保持一致
  * @param[out] peCheckResult 校验结果
  * @return     0,成功; -1,失败
  */
@@ -792,7 +792,7 @@ int cotParam_SingleParamCheckInput(const cotParamInfo_t *pParam, const void *pVa
  * @param[out] peCheckResult 校验结果
  * @return     0,成功; -1,失败
  */
-int cotParam_SingleParamCheck(const cotParamInfo_t *pParam, cotParamCheckRet_e *peCheckResult)
+int cotParam_SingleParamSelfCheck(const cotParamInfo_t *pParam, cotParamCheckRet_e *peCheckResult)
 {
     return cotParam_SingleParamCheckInput(pParam, pParam->unCurValuePtr.pVoid, peCheckResult);
 }

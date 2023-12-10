@@ -398,80 +398,80 @@ void test_CheckRange(void)
     cotParamCheckRet_e eCheckResult;
 
     g_test_u16 = 60;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     g_test_u16 = 120;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OK, eCheckResult);
     g_test_u16 = 4000;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MAX, eCheckResult);
 
     g_test_u16 = 60;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_DEF);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(100, g_test_u16);
     g_test_u16 = 4000;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_DEF);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MAX, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(100, g_test_u16);
 
     g_test_u16 = 60;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_MIN);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(90, g_test_u16);
     g_test_u16 = 4000;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_MIN);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MAX, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(90, g_test_u16);
 
     g_test_u16 = 60;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_MAX);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(3000, g_test_u16);
     g_test_u16 = 4000;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_MAX);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MAX, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(3000, g_test_u16);
 
     g_test_u16 = 60;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_MIN_MAX);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(90, g_test_u16);
     g_test_u16 = 4000;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_u16), COT_PARAM_RESET_MIN_MAX);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MAX, eCheckResult);
     TEST_ASSERT_EQUAL_UINT(3000, g_test_u16);
 
 #if COT_PARAM_USE_STRING_TYPE
     snprintf(g_test_str, sizeof(g_test_str), "ABCDEF");
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), COT_PARAM_RESET_NONE);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OK, eCheckResult);
     TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
 
     snprintf(g_test_str, sizeof(g_test_str), "AB");
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), COT_PARAM_RESET_MIN_MAX);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     TEST_ASSERT_EQUAL_STRING("AB", g_test_str);
 
     snprintf(g_test_str, sizeof(g_test_str), "ABCDEF123456");
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), COT_PARAM_RESET_MIN_MAX);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MAX, eCheckResult);
     TEST_ASSERT_EQUAL_STRING("ABCDEF1234", g_test_str);
 
     snprintf(g_test_str, sizeof(g_test_str), "AB");
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), &eCheckResult);
     cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, g_test_str), COT_PARAM_RESET_DEF);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OVER_MIN, eCheckResult);
     TEST_ASSERT_EQUAL_STRING("abcdef", g_test_str);
@@ -483,17 +483,17 @@ void test_CheckCustomWay(void)
     cotParamCheckRet_e eCheckResult;
 
     g_test_s16 = 200;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OK, eCheckResult);
 
 #if COT_PARAM_USE_CUSTOM_CHECK
     g_test_s16 = 201;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OTHER_ERR, eCheckResult);
 #endif
 
     g_test_s16 = 202;
-    cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_s16), &eCheckResult);
     TEST_ASSERT_EQUAL_INT(COT_PARAM_CHECK_OK, eCheckResult);
 }
 
