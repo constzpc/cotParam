@@ -140,9 +140,9 @@ typedef struct stuParamInfo
 #endif
 } cotParamInfo_t;
 
-typedef int (*pfnCheckError_f)(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e eCheckResult);
-typedef int (*pfnLoad_f)(uint8_t *pBuf, uint16_t *len, bool *pisFinish);
-typedef int (*pfnSave_f)(const uint8_t *pBuf, uint16_t len, bool isFinish);
+typedef int (*cotParamError_f)(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e eCheckResult);
+typedef int (*cotParamLoad_f)(uint8_t *pBuf, uint16_t bufSize, uint16_t *pLength);
+typedef int (*cotParamSave_f)(const uint8_t *pBuf, uint16_t len);
 
 // 定义参数管理结构体
 typedef struct

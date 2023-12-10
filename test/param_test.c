@@ -192,19 +192,19 @@ void test_ParamSerializeSize(void)
     uint32_t length;
     uint8_t buf[200];
 #if COT_PARAM_SUPPORT_NUM == COT_PARAM_SUPPORT_16
-    TEST_ASSERT_EQUAL_UINT(112, cotParam_GetSerializeSize(&sg_tParamManager));
+    TEST_ASSERT_EQUAL_UINT(102, cotParam_GetSerializeSize(&sg_tParamManager));
     length = cotParam_Serialize(&sg_tParamManager, buf);
     // HEX_PRINTF("", buf, length);
     TEST_ASSERT_EQUAL_UINT(102, length);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(kBuf, buf, length);
 #elif COT_PARAM_SUPPORT_NUM == COT_PARAM_SUPPORT_256
-    TEST_ASSERT_EQUAL_UINT(128, cotParam_GetSerializeSize(&sg_tParamManager));
+    TEST_ASSERT_EQUAL_UINT(118, cotParam_GetSerializeSize(&sg_tParamManager));
     length = cotParam_Serialize(&sg_tParamManager, buf);
     // HEX_PRINTF("", buf, length);
     TEST_ASSERT_EQUAL_UINT(118, length);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(kBuf, buf, length);
 #elif COT_PARAM_SUPPORT_NUM == COT_PARAM_SUPPORT_4096
-    TEST_ASSERT_EQUAL_UINT(144, cotParam_GetSerializeSize(&sg_tParamManager));
+    TEST_ASSERT_EQUAL_UINT(134, cotParam_GetSerializeSize(&sg_tParamManager));
     length = cotParam_Serialize(&sg_tParamManager, buf);
     // HEX_PRINTF("", buf, length);
     TEST_ASSERT_EQUAL_UINT(134, length);
@@ -237,49 +237,51 @@ static uint8_t sg_buf[500];
 static uint32_t sg_length = 0;
 
 // 从储存空间读取数据
-int OnLoadCallback(uint8_t *pBuf, uint16_t *len, bool *pisFinish)
+int OnLoadCallback(uint8_t *pBuf, uint16_t bufSize, uint16_t *pLength)
 {
-    uint16_t needReadLen = *len;
+    uint16_t length;
     static uint32_t s_offset = 0;
 
-    if (sg_length == s_offset)
+    if (s_offset < sg_length)
     {
-        *len = 0;
-        s_offset = 0;
-        *pisFinish = true;
-        return 0;
+        if (s_offset + bufSize <= sg_length)
+        {
+            length = bufSize;
+            memcpy(pBuf, &sg_buf[s_offset], length);
+            s_offset += length;
+        }
+        else
+        {
+            length = sg_length - s_offset;
+            memcpy(pBuf, &sg_buf[s_offset], length);
+            s_offset += length;
+        }
     }
     else
     {
-        *pisFinish = false;
+        length = 0;
+        s_offset = 0;
     }
 
-    if (sg_length - s_offset < needReadLen)
-    {
-        needReadLen = sg_length - s_offset;
-    }
-
-    memcpy(pBuf, &sg_buf[s_offset], needReadLen);
-    *len = needReadLen;
-    s_offset += needReadLen;
-
+    *pLength = length;
     return 0;
 }
 
 // 写数据至储存空间
-int OnSaveCallback(const uint8_t *pBuf, uint16_t len, bool isFinish)
+int OnSaveCallback(const uint8_t *pBuf, uint16_t len)
 {
     static uint32_t s_offset = 0;
 
-    if (isFinish)
+    if (len > 0)
+    {
+        memcpy(&sg_buf[s_offset], pBuf, len);
+        s_offset += len;
+        sg_length = s_offset;
+    }
+    else
     {
         s_offset = 0;
-        return 0;
     }
-
-    memcpy(&sg_buf[s_offset], pBuf, len);
-    s_offset += len;
-    sg_length = s_offset;
 
     return 0;
 }

@@ -136,10 +136,10 @@
 
 extern int cotParam_Init(cotParamManager_t* pManager, cotParamInfo_t* pParamTable, uint16_t count);
 extern int cotParam_ResetDefault(const cotParamManager_t *pManager);
-extern int cotParam_Check(const cotParamManager_t* pManager, pfnCheckError_f pfnCheckError);
+extern int cotParam_Check(const cotParamManager_t* pManager, cotParamError_f pfnCheckError);
 
-extern int cotParam_Load(const cotParamManager_t* pManager, pfnLoad_f pfnLoadCallback);
-extern int cotParam_Save(const cotParamManager_t* pManager, pfnSave_f pfnSaveCallback);
+extern int cotParam_Load(const cotParamManager_t* pManager, cotParamLoad_f pfnLoadCallback);
+extern int cotParam_Save(const cotParamManager_t* pManager, cotParamSave_f pfnSaveCallback);
 
 extern uint32_t cotParam_GetSerializeSize(const cotParamManager_t* pManager);
 extern uint32_t cotParam_Serialize(const cotParamManager_t* pManager, uint8_t *pbuf);

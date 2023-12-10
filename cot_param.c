@@ -268,7 +268,7 @@ int cotParam_ResetDefault(const cotParamManager_t *pManager)
   * @param      pfnCheckError 参数超出范围时的处理函数
   * @return     0,成功; -1,失败
   */
-int cotParam_Check(const cotParamManager_t* pManager, pfnCheckError_f pfnCheckError)
+int cotParam_Check(const cotParamManager_t* pManager, cotParamError_f pfnCheckError)
 {
     cotParamCheckRet_e eCheckResult;
 
@@ -962,9 +962,9 @@ static uint8_t *MoveBufToBase(uint8_t *pbuf, uint32_t length)
   *
   * @param      pManager 参数表管理句柄
   * @param      pfnLoadCallback 加载回调函数
-  * @return     0,成功; -1,失败
+  * @return     0,成功; -1,失败; -2,加载回调函数返回失败
   */
-int cotParam_Load(const cotParamManager_t *pManager, pfnLoad_f pfnLoadCallback)
+int cotParam_Load(const cotParamManager_t *pManager, cotParamLoad_f pfnLoadCallback)
 {
 #if COT_PARAM_USE_STRING_TYPE
     uint8_t buf[sizeof(cotParamInfo_t) + COT_PARAM_STRING_MAX_LENGTH];
@@ -978,7 +978,6 @@ int cotParam_Load(const cotParamManager_t *pManager, pfnLoad_f pfnLoadCallback)
         return -1;
     }
 
-    bool isFinish = false;
     uint16_t length = 0;
     uint16_t paramLength = 0;
     uint16_t id = 0;
@@ -992,14 +991,14 @@ int cotParam_Load(const cotParamManager_t *pManager, pfnLoad_f pfnLoadCallback)
     {
         length = sizeof(buf) - (ptr - buf);
 
-        if (pfnLoadCallback(ptr, &length, &isFinish) != 0)
+        if (pfnLoadCallback(ptr, length, &length) != 0)
         {
             return -2;
         }
 
-        if (isFinish || length == 0)
+        if (length == 0)
         {
-            continue;
+            break;
         }
 
         length += (ptr - buf);
@@ -1070,7 +1069,7 @@ int cotParam_Load(const cotParamManager_t *pManager, pfnLoad_f pfnLoadCallback)
 #endif
         ptr = MoveBufToBase(ptr, ptr - buf);
         ptr += length;
-    } while (!isFinish);
+    } while (1);
 
     return 0;
 }
@@ -1136,9 +1135,9 @@ static uint16_t ParamInfoToStream(uint8_t *pbuf, cotParamInfo_t *pParam)
   *
   * @param      pManager 参数表管理句柄
   * @param      pfnSaveCallback 保存回调函数
-  * @return     0,成功; -1,失败
+  * @return     0,成功; -1,失败; -2,保存回调函数返回失败
   */
-int cotParam_Save(const cotParamManager_t *pManager, pfnSave_f pfnSaveCallback)
+int cotParam_Save(const cotParamManager_t *pManager, cotParamSave_f pfnSaveCallback)
 {
 #if COT_PARAM_USE_STRING_TYPE
     uint8_t buf[sizeof(cotParamInfo_t) + COT_PARAM_STRING_MAX_LENGTH];
@@ -1159,7 +1158,7 @@ int cotParam_Save(const cotParamManager_t *pManager, pfnSave_f pfnSaveCallback)
 #if COT_PARAM_USE_KEY_VALUE
     buf[0] = COT_PARAM_SUPPORT_NUM;
 
-    if (pfnSaveCallback(buf, 1, false) != 0)
+    if (pfnSaveCallback(buf, 1) != 0)
     {
         return -2;
     }
@@ -1183,13 +1182,13 @@ int cotParam_Save(const cotParamManager_t *pManager, pfnSave_f pfnSaveCallback)
         length = ParamInfoToStream(&buf[length], &pManager->pParamTable[i]);
         ptr += length;
 
-        if (pfnSaveCallback(buf, (ptr - buf), false) != 0)
+        if (pfnSaveCallback(buf, (ptr - buf)) != 0)
         {
             return -2;
         }
     }
 
-    if (pfnSaveCallback(buf, 0, true) != 0)
+    if (pfnSaveCallback(buf, 0) != 0)
     {
         return -2;
     }
@@ -1205,7 +1204,7 @@ int cotParam_Save(const cotParamManager_t *pManager, pfnSave_f pfnSaveCallback)
  */
 uint32_t cotParam_GetSerializeSize(const cotParamManager_t* pManager)
 {
-    uint32_t length = 1 + 10; // 预留
+    uint32_t length = 1;
     uint16_t idx = 0;
 
     if (pManager == NULL)
