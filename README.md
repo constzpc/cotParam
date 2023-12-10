@@ -66,8 +66,8 @@
 
   > - 方便在本地储存设备（如flash、eeprom等）保存/读取二进制数据，甚至还可以跨设备传输使用
   > - 提供了两种方式：
-  >   - 保存/加载：提供参数实际保存/加载的回调函数，通过多次触发回调函数完成参数的序列化保存、加载反序列化功能；适用于小内存的平台使用（不需要申请内存处理）
-  >   - 序列化和反序列化：需要提前申请内存用来保存参数表序列化的数据或者读取即将反序列化的数据；一次性完成操作（需要申请较大的内存完成）
+  >   - 第一种：只需要提供参数数据保存/加载的回调函数，调用相关接口函数完成参数的序列化保存和反序列化加载；该方式会多次触发回调函数保存数据和读取数据，适用于小内存的平台使用（不需要申请内存）
+  >   - 第二种：需要提前申请内存用来保存参数表序列化的数据或者读取即将反序列化的数据；一次性完成操作（需要申请较大的内存完成）
   >
 * [X] 支持启用键值对功能
 
@@ -101,51 +101,60 @@
 ```c
 typedef struct
 {
-    uint16_t test1;
-    float test2;
-    char str[12];
+    uint16_t usValue;
+    uint8_t ucValue;
+    uint32_t uiValue;
+    float fValue;
+    char szString_1[12];
+    double dValue;
+    int16_t sValue;
+    int8_t cValue;
+    int32_t iValue;
+    char szString_2[10];
 }ParamDemo_t;
 
-static ParamDemo_t sg_tTest = {
-    .str = "sdf",
-    .test1 = 20,
-    .test2 = 567.4
+ParamDemo_t g_tTestVal = {
+    .usValue = 20,
+    .ucValue = 10,
+    .uiValue = 1000,
+    .fValue = 3.14,
+    .szString_1 = "abcd",
+    .dValue = 5.12,
+    .sValue = -100,
+    .cValue = -2,
+    .iValue = 300,
+    .szString_2 = "12234",
 };
 
-int16_t g_test = 50;
-uint16_t g_test_2 = 20;
-double g_test_3 = 3.15;
-COT_PARAM_INT8_T g_test_4 = 8;
-COT_PARAM_UINT32_T g_test_5 = 620;
-COT_PARAM_UINT8_T g_test_6 = 45;
-COT_PARAM_INT64_T g_test_7 = 5;
-COT_PARAM_INT8_T g_sd = 2;
-COT_PARAM_INT64_T g_test_88 = 80;
-char g_test_str[15] = "abcdef";
-char g_str_des[13] = "EERR";
-char g_str_des_2[15] = "sdRR";
-char g_str_des_3[15] = "ewRR";
+int8_t g_cTest = 50;
+char g_szString[10] = "qwer";
+
+static int CheckSValue(const void *pCurParam);
 
 cotParamInfo_t sg_ParamTable[] = {
-    COT_PARAM_ITEM_BIND(1, g_test, COT_PARAM_INT16, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND_WITH_NAME(2, "test_2", g_test_2, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20), // 另取名字
-    COT_PARAM_ITEM_BIND(3, g_test_3, COT_PARAM_DOUBLE, COT_PARAM_ATTR_WR, 3.15, -2.15, 5.12),
-    COT_PARAM_ITEM_BIND(4, g_test_str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcdef", 0, sizeof(g_test_str)),
-    COT_PARAM_ITEM_BIND(5, g_test_4, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 8, -10, 10),
-    COT_PARAM_ITEM_BIND(6, g_test_5, COT_PARAM_UINT32, COT_PARAM_ATTR_WR, 620, 500, 10000),
-    COT_PARAM_ITEM_BIND(7, g_test_6, COT_PARAM_UINT8, COT_PARAM_ATTR_WR, 45, 5, 100),
-    COT_PARAM_ITEM_BIND(8, g_test_7, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
-    COT_PARAM_ITEM_BIND(9, sg_tTest.test1, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20, 10, 2000),
-    COT_PARAM_ITEM_BIND(10, sg_tTest.test2, COT_PARAM_FLOAT, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND(11, sg_tTest.str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "const-zpc", 6, sizeof(sg_tTest.str)),
-    COT_PARAM_ITEM_BIND(12, g_test_88, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
-    COT_PARAM_ITEM_BIND(13, g_str_des, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WER45", 10, sizeof(g_str_des)),
-    COT_PARAM_ITEM_BIND(14, g_str_des_2, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WTG"),
-    COT_PARAM_ITEM_BIND(15, g_str_des_3, COT_PARAM_STRING, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND(17, g_sd, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 5),
+    COT_PARAM_ITEM_BIND(1, g_tTestVal.usValue, COT_PARAM_UINT16, COT_PARAM_ATTR_WR),
+    COT_PARAM_ITEM_BIND(2, g_tTestVal.ucValue, COT_PARAM_UINT8, COT_PARAM_ATTR_WR, 20),
+    COT_PARAM_ITEM_BIND(3, g_tTestVal.uiValue, COT_PARAM_UINT32, COT_PARAM_ATTR_WR, 1000, 1000, 10000),
+    COT_PARAM_ITEM_BIND(4, g_tTestVal.fValue, COT_PARAM_FLOAT, COT_PARAM_ATTR_WR, 10, -10.5, 10.5),
+    COT_PARAM_ITEM_BIND(5, g_tTestVal.szString_1, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcd", 3, sizeof(g_tTestVal.szString_1)),
+    COT_PARAM_ITEM_BIND(6, g_tTestVal.dValue, COT_PARAM_DOUBLE, COT_PARAM_ATTR_WR, 0, -90.10, 100.10),
+    COT_PARAM_ITEM_BIND(7, g_tTestVal.sValue, COT_PARAM_INT16, COT_PARAM_ATTR_WR, 100, -200, 200, CheckSValue), // 添加自定义校验
+    COT_PARAM_ITEM_BIND_WITH_NAME(8, "g_cTest", g_cTest, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 50, -100, 100), // 另取参数名
+    COT_PARAM_ITEM_BIND(9, g_szString, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "XXX", 3, 6),
 };
 
-static cotParamManager_t sg_tParamManager;
+static int CheckSValue(const void *pCurParam)
+{
+    const int16_t *p_sValue = (const int16_t *)pCurParam;
+
+    if ((*p_sValue) % 2 != 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 
 int mian()
 {
@@ -157,7 +166,15 @@ int mian()
 
 ### 参数保存/加载
 
-1. 保存/加载方式（函数内部完成序列化和反序列化，逐步写入保存/读取加载）
+将参数表的部分信息（包括当前值）进行序列化，方便进行数据保存，等下次开机再读取数据后反序列化，还原成参数表的这部分信息。
+
+> 甚至将这部分数据传输给另一台设备，进行参数数据备份或同步等功能
+
+将参数表序列化完成后，可以对数据进行二次封装，比如可以增加头信息，crc校验等再进行数据保存，同样在加载时也需要解析，将额外添加的信息去除后才能进行反序列化。
+
+##### 第一种
+
+提供参数数据保存/加载的回调函数，调用相关接口函数完成参数的序列化保存和反序列化加载；该方式会多次触发回调函数保存数据和读取数据，适用于小内存的平台使用（不需要额外申请内存）
 
 ```c
 
@@ -168,44 +185,52 @@ int OnCheckErrorResetHandle(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e
     return 0;
 }
 
-// 从储存设备多次读取
-int OnLoadCallback(uint8_t *pBuf, uint16_t *p_len, bool *pisFinish)
+// 从储存空间读取数据
+int OnLoadCallback(uint8_t *pBuf, uint16_t bufSize, uint16_t *pLength)
 {
+    uint16_t length;
     static uint32_t s_offset = 0;
 
-    if (sg_length == s_offset)
+    if (s_offset < sg_length)
     {
-        *p_len = 0;
-        s_offset = 0;
-        *pisFinish = true;
-        return 0;
+        if (s_offset + bufSize <= sg_length)
+        {
+            length = bufSize;
+            memcpy(pBuf, &sg_buf[s_offset], length);
+            s_offset += length;
+        }
+        else
+        {
+            length = sg_length - s_offset;
+            memcpy(pBuf, &sg_buf[s_offset], length);
+            s_offset += length;
+        }
     }
     else
     {
-        *pisFinish = false;
+        length = 0;
+        s_offset = 0;
     }
 
-    seek(s_offset);
-    *p_len= read(pBuf, *p_len);
-    s_offset += (*len);
-
+    *pLength = length;
     return 0;
 }
 
 // 写数据至储存空间
-int OnSaveCallback(const uint8_t *pBuf, uint16_t len, bool isFinish)
+int OnSaveCallback(const uint8_t *pBuf, uint16_t len)
 {
     static uint32_t s_offset = 0;
 
-    if (isFinish)
+    if (len > 0)
+    {
+        memcpy(&sg_buf[s_offset], pBuf, len);
+        s_offset += len;
+        sg_length = s_offset;
+    }
+    else
     {
         s_offset = 0;
-        return 0;
     }
-
-    seek(s_offset);
-    write(pBuf, len);
-    s_offset += len;
 
     return 0;
 }
@@ -215,36 +240,84 @@ void LoadParam(void)
 {
     cotParam_Load(&sg_tParamManager, OnLoadCallback);
   
-    // 加载后全部参数进行校验
+    // 加载后全部参数进行校验（可选）
     cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
 }
 
+// 保存参数
 void SaveParam(void)
 {
-    // 保存前全部参数进行校验
+    // 保存前全部参数进行校验（可选）
     cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
     cotParam_Save(&sg_tParamManager, OnSaveCallback);
 }
 
 ```
 
-2. 序列化/反序列化方式（一次性写入保存/读取加载）
+#### 第二种
+
+需要提前申请内存用来保存参数表序列化的数据或者读取即将反序列化的数据。
+
+1. 定义buf
 
 ```c
-//函数中使用
+// 加载参数
+void LoadParam(void)
+{
+    uint8_t buf[500];
+    uint32_t length;
+
+    length = read(buf);
+    cotParam_Deserialization(&sg_tParamManager, buf, length);
+  
+    // 加载后全部参数进行校验（可选）
+    cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
+}
+
+// 保存参数
+void SaveParam(void)
+{
+    uint8_t buf[500];
+    uint32_t length;
+
+    // 保存前全部参数进行校验（可选）
+    cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
+    length = cotParam_Serialize(&sg_tParamManager, buf);
+    write(buf, length);
+}
+
+```
+
+2. buf通过内存申请
+
+```c
+// 加载参数
+void LoadParam(void)
+{
+    uint8_t pBuf = (uint8_t *)malloc(500);  // 申请足够大的内存
+    uint32_t length;
+
+    length = read(pBuf, length); // 获取数据的实际长度
+    cotParam_Deserialization(&sg_tParamManager, pBuf, length);
+  
+    // 加载后全部参数进行校验（可选）
+    cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
+}
+
+// 保存参数
+void SaveParam(void)
+{
+    uint8_t pBuf = (uint8_t *)malloc(cotParam_GetSerializeSize(&sg_tParamManager));
+    uint32_t length;
+
+    // 保存前全部参数进行校验（可选）
+    cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
+    length = cotParam_Serialize(&sg_tParamManager, pBuf);
+    write(buf, length);
+}
+
 int main()
 {
-#if 0
-    // 保存
-    uint8_t w_buf[500];
-    uint32_t length = cotParam_Serialize(&sg_tParamManager, w_buf);
-    write(w_buf, length);
-  
-    // 加载
-    uint8_t r_buf[500];
-    uint32_t length = read(r_buf);
-    cotParam_Deserialization(&sg_tParamManager, r_buf, length);
-#else
     // 保存
     uint8_t *p_wbuf = (uint8_t *)malloc(cotParam_GetSerializeSize(&sg_tParamManager));
   
@@ -261,11 +334,10 @@ int main()
     write(p_rbuf, length);
     free(p_rbuf);
     p_rbuf = NULL;
-#endif
 }
 ```
 
-### 校验处理
+### 校验方式
 
 校验需要提前在参数表中设置缺省值，最小值和最大值后才有效。
 
@@ -274,16 +346,32 @@ int main()
 根据参数设置范围进行校验。
 
 ```c
-// 对某个变量当前参数进行范围校验，得到校验结果
-cotParam_SingleParamCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), &eCheckResult);
+// 对某个变量当前参数进行范围校验，得到校验结果后自行处理
+cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), &eCheckResult);
+
+if (eCheckResult != COT_PARAM_CHECK_OK) // 修改后检查
+{
+    cotParam_SingleParamResetDefValue(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3)); // 如果校验失败，则恢复为默认值
+}
+
 
 // 对某个变量参数变更后（当前值已经变化）进行校验处理，若超出范围则恢复默认
 g_test_3 = 1000;
 cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), COT_PARAM_RESET_DEF);
 
+// 对某个变量参数在需要变更前（当前值没有变化）进行校验处理，得到校验结果后自行处理
+double tmp = 1000;
+cotParam_SingleParamCheckInput(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), &tmp, &eCheckResult);
+
+if (eCheckResult == COT_PARAM_CHECK_OK)
+{
+    g_test_3 = tmp;// 如果校验成功，则修改
+}
+
 // 对某个变量参数在需要变更前（当前值没有变化）进行校验处理，若新的值超出范围则不更新变量参数当前的值
 double tmp = 1000;
 cotParam_SingleParamUpdate(cotParam_FindParamByParamPtr(&sg_tParamManager, &g_test_3), &tmp, COT_PARAM_RESET_NONE)
+
 ```
 
 #### 自定义校验
