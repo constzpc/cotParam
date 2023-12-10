@@ -3,25 +3,24 @@
 
 #include "cot_param.h"
 
+typedef struct
+{
+    uint16_t usValue;
+    uint8_t ucValue;
+    uint32_t uiValue;
+    float fValue;
+    char szString_1[12];
+    double dValue;
+    int16_t sValue;
+    int8_t cValue;
+    int32_t iValue;
+    char szString_2[10];
+}ParamDemo_t;
 
-extern COT_PARAM_INT16_T g_test;
-extern COT_PARAM_UINT16_T g_test_2;
-extern COT_PARAM_DOUBLE_T g_test_3;
-extern COT_PARAM_INT8_T g_test_4;
-extern COT_PARAM_UINT32_T g_test_5;
-extern COT_PARAM_UINT8_T g_test_6;
-extern COT_PARAM_INT64_T g_test_7;
-extern COT_PARAM_INT8_T g_sd;
-extern COT_PARAM_INT64_T g_test_88;
-extern char g_test_str[15];
-extern char g_str_des[13];
-extern char g_str_des_2[15];
-extern char g_str_des_3[15];
+extern ParamDemo_t g_tTestVal;
+extern int8_t g_cTest;
+extern char g_szString[10];
 
-#define COT_PARAM_UPDATE(name, val, ret)   {\
-    param_##name##_t t = val;\
-    SetParamNewValue(&name, &t);\
-}
 
 void InitParam(bool isReset);
 void ReloadParam(bool isReset);
@@ -29,6 +28,13 @@ void ReloadParam(bool isReset);
 void ResetParam(void);
 void SaveParam(bool isReset);
 
-extern const bool SetParamNewValue(const void *curParamPtr, const void *newValue);
+int SingleParamCheckProcess(const void *pCurParam, cotParamResetOpt_e eResetOpt);
+
+cotParamCheckRet_e SingleParamCheck(const void *pCurParam, const void *pCheckValue);
+
+cotParamCheckRet_e SingleParamSelfCheck(const void *pCurParam);
+
+void SingleParamResetResetDefValue(const void *pCurParam);
+
 void ShowAllParam(void);
 #endif

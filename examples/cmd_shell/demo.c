@@ -2,54 +2,38 @@
 #include <string.h>
 #include <stdio.h>
 
-void ShowAllParam_1(void);
-
 int main()
 {
-    InitParam(false);
+    InitParam(true);
 
     ShowAllParam();
-    ShowAllParam_1();
 
-    g_test = 80;
-    g_test_3 = -20.5;
-    sprintf(g_str_des, "sdx");
+    g_tTestVal.fValue = 20.05;
 
-    printf("\n\n");
+    g_tTestVal.uiValue = 50;
+    SingleParamCheckProcess(&g_tTestVal.uiValue, COT_PARAM_RESET_MIN_MAX); // 修改后检查并处理：如果小于最小值则恢复最小值，大于最大值则恢复最大值
 
-    SaveParam(false);
-    ReloadParam(false);
+    g_tTestVal.uiValue = 50;
+    if (SingleParamSelfCheck(&g_tTestVal.uiValue) != COT_PARAM_CHECK_OK) // 修改后检查
+    {
+        SingleParamResetResetDefValue(&g_tTestVal.uiValue); // 如果校验失败，则恢复为默认值
+    }
+
+    uint32_t tmp = 50;
+
+    if (SingleParamCheck(&g_tTestVal.uiValue, &tmp) == COT_PARAM_CHECK_OK) // 修改前检查（参数和被检查变量值类型需要一样）
+    {
+        g_tTestVal.uiValue = tmp;// 如果校验成功，则修改
+    }
+
+    // g_test = 80;
+    // g_test_3 = -20.5;
+    sprintf(g_szString, "sd");
+
+    SaveParam(true);
+    ReloadParam(true);
 
     ShowAllParam();
-    ShowAllParam_1();
-    // int ret = COT_PARAM_DAT_SET_NEW_VALUE(g_test_6, 50, COT_PARAM_DEF);
-    // printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
-
-    // ret = COT_PARAM_DAT_SET_NEW_VALUE(g_test_6, 101, COT_PARAM_DEF);
-    // printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
-
-    // ret = COT_PARAM_DAT_SET_NEW_VALUE(g_test_6, 101, COT_PARAM_NONE);
-    // printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
-
-    // ret = COT_PARAM_DAT_SET_NEW_VALUE(g_test_6, 101, COT_PARAM_MIN_MAX);
-    // printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
-
-    // ret = COT_PARAM_DAT_SET_NEW_VALUE(g_test_6, 1, COT_PARAM_MIN_MAX);
-    // printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
-
-    // ret = COT_PARAM_DAT_SET_NEW_VALUE(g_test_6, 1, COT_PARAM_MIN_MAX);
-    // printf("ret = %d, g_test_6 = %d\n", ret, g_test_6);
-
-    // COT_PARAM_STR_SET_NEW_VALUE(g_test_str, "123aa9", COT_PARAM_NONE);
-    // printf("ret = %d, g_test_str = %s\n", ret, g_test_str);
-
-    // COT_PARAM_STR_SET_NEW_VALUE(g_test_str, "123aa1245249", COT_PARAM_DEF);
-    // printf("ret = %d, g_test_str = %s\n", ret, g_test_str);
-
-    // COT_PARAM_STR_SET_NEW_VALUE(g_test_str, "123aa945457", COT_PARAM_MIN_MAX);
-    // printf("ret = %d, g_test_str = %s\n", ret, g_test_str);
-
-    // ShowAllParam();
 
     return 0;
 }

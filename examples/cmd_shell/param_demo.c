@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include<stdlib.h>
 
+// 0 使用一次性完成参数保存/加载  1 使用分次完成参数保存/加载
+#define USE_PARAM_SAVE_LOAD_API   0
+
 /******************************************  模拟储存设备操作  ******************************************************/
 // 储存空间定义
 uint8_t sg_buf[500];
@@ -14,132 +17,112 @@ uint32_t sg_length = 0;
     printf("\n");
 
 // 从储存空间读取数据
-int OnLoadCallback(uint8_t *pBuf, uint16_t *len, bool *pisFinish)
+int OnLoadCallback(uint8_t *pBuf, uint16_t bufSize, uint16_t *pLength)
 {
-    uint16_t needReadLen = *len;
+    uint16_t length;
     static uint32_t s_offset = 0;
 
-    if (sg_length == s_offset)
+    if (s_offset < sg_length)
     {
-        *len = 0;
-        s_offset = 0;
-        *pisFinish = true;
-        return 0;
+        if (s_offset + bufSize <= sg_length)
+        {
+            length = bufSize;
+            memcpy(pBuf, &sg_buf[s_offset], length);
+            s_offset += length;
+        }
+        else
+        {
+            length = sg_length - s_offset;
+            memcpy(pBuf, &sg_buf[s_offset], length);
+            s_offset += length;
+        }
     }
     else
     {
-        *pisFinish = false;
+        length = 0;
+        s_offset = 0;
     }
 
-    if (sg_length - s_offset < needReadLen)
+    if (length > 0)
     {
-        needReadLen = sg_length - s_offset;
+        printf("************************************************************************************************\n");
+        HEX_PRINTF("\tread", pBuf, length);
+        printf("************************************************************************************************\n");
     }
 
-    memcpy(pBuf, &sg_buf[s_offset], needReadLen);
-    HEX_PRINTF("\tread", pBuf, needReadLen);
-    *len = needReadLen;
-    s_offset += needReadLen;
-
+    *pLength = length;
     return 0;
 }
 
 // 写数据至储存空间
-int OnSaveCallback(const uint8_t *pBuf, uint16_t len, bool isFinish)
+int OnSaveCallback(const uint8_t *pBuf, uint16_t len)
 {
     static uint32_t s_offset = 0;
 
-    if (isFinish)
+    if (len > 0)
     {
-        printf("********\n");
-        HEX_PRINTF("\tsave", sg_buf, s_offset + len);
-        s_offset = 0;
-        return 0;
+        memcpy(&sg_buf[s_offset], pBuf, len);
+        HEX_PRINTF("\twrite", pBuf, len);
+        s_offset += len;
+        sg_length = s_offset;
     }
-
-    memcpy(&sg_buf[s_offset], pBuf, len);
-    HEX_PRINTF("\tsave", pBuf, len);
-    s_offset += len;
-    sg_length = s_offset;
+    else
+    {
+        printf("************************************************************************************************\n");
+        HEX_PRINTF("\tSave", sg_buf, sg_length);
+        printf("************************************************************************************************\n");
+        s_offset = 0;
+    }
 
     return 0;
 }
 
 /******************************************  模拟储存设备操作  ******************************************************/
 
-typedef struct
-{
-    uint16_t test1;
-    float test2;
-    char str[12];
-}ParamDemo_t;
-
-static ParamDemo_t sg_tTest = {
-    .str = "sdf",
-    .test1 = 20,
-    .test2 = 567.4
+ParamDemo_t g_tTestVal = {
+    .usValue = 20,
+    .ucValue = 10,
+    .uiValue = 1000,
+    .fValue = 3.14,
+    .szString_1 = "abcd",
+    .dValue = 5.12,
+    .sValue = -100,
+    .cValue = -2,
+    .iValue = 300,
+    .szString_2 = "12234",
 };
 
-COT_PARAM_INT16_T g_test = 50;
-COT_PARAM_UINT16_T g_test_2 = 20;
-COT_PARAM_DOUBLE_T g_test_3 = 3.15;
-COT_PARAM_INT8_T g_test_4 = 8;
-COT_PARAM_UINT32_T g_test_5 = 620;
-COT_PARAM_UINT8_T g_test_6 = 45;
-COT_PARAM_INT64_T g_test_7 = 5;
-COT_PARAM_INT8_T g_sd = 2;
-COT_PARAM_INT64_T g_test_88 = 80;
-char g_test_str[15] = "abcdef";
-char g_str_des[13] = "EERR";
-char g_str_des_2[15] = "sdRR";
-char g_str_des_3[15] = "ewRR";
+int8_t g_cTest = 50;
+char g_szString[10] = "qwer";
 
-// int a[10];
+static int CheckSValue(const void *pCurParam);
 
 cotParamInfo_t sg_ParamTable[] = {
-    COT_PARAM_ITEM_BIND(1, g_test, COT_PARAM_INT16, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND_WITH_NAME(2, "ds", g_test_2, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20),
-    // COT_PARAM_ITEM_BIND(2, g_test_2, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20),
-    COT_PARAM_ITEM_BIND(3, g_test_3, COT_PARAM_DOUBLE, COT_PARAM_ATTR_WR, 3.15, -2.15, 5.12),
-    COT_PARAM_ITEM_BIND(4, g_test_str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcdef", 0, sizeof(g_test_str)),
-    COT_PARAM_ITEM_BIND(5, g_test_4, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 8, -10, 10),
-    COT_PARAM_ITEM_BIND(6, g_test_5, COT_PARAM_UINT32, COT_PARAM_ATTR_WR, 620, 500, 10000),
-    COT_PARAM_ITEM_BIND(7, g_test_6, COT_PARAM_UINT8, COT_PARAM_ATTR_WR, 45, 5, 100),
-    COT_PARAM_ITEM_BIND(8, g_test_7, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
-    COT_PARAM_ITEM_BIND(9, sg_tTest.test1, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20, 10, 2000),
-    COT_PARAM_ITEM_BIND(10, sg_tTest.test2, COT_PARAM_FLOAT, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND(11, sg_tTest.str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "const-zpc", 6, sizeof(sg_tTest.str)),
-    COT_PARAM_ITEM_BIND(12, g_test_88, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
-    COT_PARAM_ITEM_BIND(13, g_str_des, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WER45", 10, sizeof(g_str_des)),
-    COT_PARAM_ITEM_BIND(14, g_str_des_2, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WTG"),
-    COT_PARAM_ITEM_BIND(15, g_str_des_3, COT_PARAM_STRING, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND(17, g_sd, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 5),
+    COT_PARAM_ITEM_BIND(1, g_tTestVal.usValue, COT_PARAM_UINT16, COT_PARAM_ATTR_WR),
+    COT_PARAM_ITEM_BIND(2, g_tTestVal.ucValue, COT_PARAM_UINT8, COT_PARAM_ATTR_WR, 20),
+    COT_PARAM_ITEM_BIND(3, g_tTestVal.uiValue, COT_PARAM_UINT32, COT_PARAM_ATTR_WR, 1000, 1000, 10000),
+    COT_PARAM_ITEM_BIND(4, g_tTestVal.fValue, COT_PARAM_FLOAT, COT_PARAM_ATTR_WR, 10, -10.5, 10.5),
+    COT_PARAM_ITEM_BIND(5, g_tTestVal.szString_1, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcd", 3, sizeof(g_tTestVal.szString_1)),
+    COT_PARAM_ITEM_BIND(6, g_tTestVal.dValue, COT_PARAM_DOUBLE, COT_PARAM_ATTR_WR, 0, -90.10, 100.10),
+    COT_PARAM_ITEM_BIND(7, g_tTestVal.sValue, COT_PARAM_INT16, COT_PARAM_ATTR_WR, 100, -200, 200, CheckSValue), // 添加自定义校验
+    COT_PARAM_ITEM_BIND_WITH_NAME(8, "g_cTest", g_cTest, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 50, -100, 100), // 另取参数名
+    COT_PARAM_ITEM_BIND(9, g_szString, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "XXX", 3, 6),
 };
 
-COT_PARAM_UINT64_T g_test_55 = 62055;
+static int CheckSValue(const void *pCurParam)
+{
+    const int16_t *p_sValue = (const int16_t *)pCurParam;
 
-cotParamInfo_t sg_ParamTable1[] = {
-    COT_PARAM_ITEM_BIND(1, g_test, COT_PARAM_INT16, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND(2, g_test_2, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20),
-    // COT_PARAM_ITEM_BIND(3, g_test_3, COT_PARAM_DOUBLE, COT_PARAM_ATTR_WR, 3.15, -2.15, 5.12),
-    // COT_PARAM_ITEM_BIND(4, g_test_str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "abcdef", 0, sizeof(g_test_str)),
-    // COT_PARAM_ITEM_BIND(5, g_test_4, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 8, -10, 10),
-    COT_PARAM_ITEM_BIND(6, g_test_55, COT_PARAM_UINT64, COT_PARAM_ATTR_WR, 62055, 500, 10000),
-    COT_PARAM_ITEM_BIND(7, g_test_6, COT_PARAM_UINT8, COT_PARAM_ATTR_WR, 45, 5, 100),
-    COT_PARAM_ITEM_BIND(8, g_test_7, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
-    COT_PARAM_ITEM_BIND(9, sg_tTest.test1, COT_PARAM_UINT16, COT_PARAM_ATTR_WR, 20, 10, 2000),
-    // COT_PARAM_ITEM_BIND(10, sg_tTest.test2, COT_PARAM_FLOAT, COT_PARAM_ATTR_WR),
-    // COT_PARAM_ITEM_BIND(11, sg_tTest.str, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "const-zpc", 6, sizeof(sg_tTest.str)),
-    COT_PARAM_ITEM_BIND(12, g_test_88, COT_PARAM_INT64, COT_PARAM_ATTR_WR, 5, -542, 5450),
-    COT_PARAM_ITEM_BIND(13, g_str_des, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WER45", 10, sizeof(g_str_des)),
-    COT_PARAM_ITEM_BIND(14, g_str_des_2, COT_PARAM_STRING, COT_PARAM_ATTR_WR, "WTG"),
-    COT_PARAM_ITEM_BIND(15, g_str_des_3, COT_PARAM_STRING, COT_PARAM_ATTR_WR),
-    COT_PARAM_ITEM_BIND(16, g_sd, COT_PARAM_INT8, COT_PARAM_ATTR_WR, 5),
-};
+    if ((*p_sValue) % 2 != 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
 
 
 static cotParamManager_t sg_tParamManager;
-static cotParamManager_t sg_tParamManager1;
 
 static void ShowSingleParam(const cotParamInfo_t *paramInfo);
 
@@ -147,7 +130,7 @@ static void ShowSingleParam(const cotParamInfo_t *paramInfo);
 int OnCheckErrorResetHandle(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e eCheckResult)
 {
     printf("\n--------error list start ----------\n");
-    printf("%4s    %-15s %-8s %-8s %-8s %-10s %-10s %-10s %-10s\n", "id", "name", "type", "length", "attr", "val", "def", "min", "max");
+    printf("%4s    %-24s %-8s %-8s %-8s %-10s %-10s %-10s %-10s\n", "id", "name", "type", "length", "attr", "val", "def", "min", "max");
     ShowSingleParam(pParamInfo);
     printf("--------error list end ------------\n");
     cotParam_SingleParamResetDefValue(pParamInfo);
@@ -157,14 +140,11 @@ int OnCheckErrorResetHandle(const cotParamInfo_t *pParamInfo, cotParamCheckRet_e
 void InitParam(bool isReset)
 {
     cotParam_Init(&sg_tParamManager, sg_ParamTable, COT_PARAM_TABLE_SIZE(sg_ParamTable));
-    cotParam_Init(&sg_tParamManager1, sg_ParamTable1, COT_PARAM_TABLE_SIZE(sg_ParamTable1));
 
     if (sg_length == 0) // 储存设备中没有储存过参数则首次进行储存
     {
         printf("frist save param: %d\n", cotParam_GetSerializeSize(&sg_tParamManager));
         SaveParam(false);
-        
-        // cotParam_Save(&sg_tParamManager, OnSaveCallback, NULL); // 初次储存可以认为数据都是默认值，无需数据校验出错时恢复默认处理
     }
 
     ReloadParam(isReset);
@@ -172,46 +152,49 @@ void InitParam(bool isReset)
 
 void ReloadParam(bool isReset)
 {
-    printf("load param\n");
+    uint8_t buf[300];
+    uint16_t length;
+
+    printf("\n============================ load param start ==========================\n");
 
     if (isReset)
     {
         cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
-        cotParam_Load(&sg_tParamManager, OnLoadCallback);
-        // cotParam_Deserialization(&sg_tParamManager1, sg_buf, sg_length);
-        // cotParam_Load(&sg_tParamManager1, OnLoadCallback, NULL);
     }
-    else
-    {
-        cotParam_Load(&sg_tParamManager, OnLoadCallback);
-        // cotParam_Deserialization(&sg_tParamManager1, sg_buf, sg_length);
-        // cotParam_Load(&sg_tParamManager1, OnLoadCallback, NULL);
-    }
-}
 
-void ResetParam(void)
-{
-    printf("reset param\n");
-    cotParam_ResetDefault(&sg_tParamManager);
+#if USE_PARAM_SAVE_LOAD_API
+    cotParam_Load(&sg_tParamManager, OnLoadCallback);
+#else
+    // OnLoadCallback(sg_buf, sg_length, true);
+    cotParam_Deserialization(&sg_tParamManager, sg_buf, sg_length);
+#endif
+    printf("============================ load param end ============================\n\n");
 }
 
 void SaveParam(bool isReset)
 {
     uint8_t buf[300];
     uint32_t bufLength = 0;
-    printf("save param\n");
+    printf("\n============================ save param start ==========================\n");
     if (isReset)
     {
         cotParam_Check(&sg_tParamManager, OnCheckErrorResetHandle);
-        cotParam_Save(&sg_tParamManager, OnSaveCallback);
     }
-    else
-    {
-        bufLength = cotParam_Serialize(&sg_tParamManager, buf);
-        OnSaveCallback(buf, bufLength, false);
-        OnSaveCallback(buf, 0, true);
-        // cotParam_Save(&sg_tParamManager, OnSaveCallback);
-    }
+
+#if USE_PARAM_SAVE_LOAD_API
+    cotParam_Save(&sg_tParamManager, OnSaveCallback);
+#else
+    bufLength = cotParam_Serialize(&sg_tParamManager, buf);
+    OnSaveCallback(buf, bufLength);
+    OnSaveCallback(buf, 0);
+#endif
+    printf("============================ save param end ============================\n\n");
+}
+
+void ResetParam(void)
+{
+    printf("reset param\n");
+    cotParam_ResetDefault(&sg_tParamManager);
 }
 
 #define ATTR(x)   ((x & (PARAM_ATTR_READ | COT_PARAM_ATTR_WRITE)) == (PARAM_ATTR_READ | COT_PARAM_ATTR_WRITE) ? \
@@ -252,7 +235,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
         switch (paramInfo->type)
         {
         case COT_PARAM_INT8:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
                 "int8_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt8);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -272,7 +255,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_INT16:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
                 "int16_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt16);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -292,7 +275,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_INT32:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
                 "int32_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt32);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -312,7 +295,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_INT64:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10ld ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10ld ", paramInfo->id, paramInfo->pszName, 
                 "int64_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt64);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -332,7 +315,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT8:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
                 "uint8_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint8);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -352,7 +335,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT16:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
                 "uint16_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint16);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -372,7 +355,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT32:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
                 "uint32_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint32);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -392,7 +375,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT64:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10lu ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10lu ", paramInfo->id, paramInfo->pszName, 
                 "uint64_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint64);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -412,7 +395,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_FLOAT:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->pszName, 
                 "float", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pFloat);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -432,7 +415,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_DOUBLE:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->pszName, 
                 "double", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pDouble);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -453,7 +436,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             break;
 #if COT_PARAM_USE_STRING_TYPE
         case COT_PARAM_STRING:
-            printf(" %-4d   %-15s %-10s %-6d %-8s %-10s ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10s ", paramInfo->id, paramInfo->pszName, 
                 "string", paramInfo->length, Attr(paramInfo->attr), paramInfo->unCurValuePtr.pString);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -482,12 +465,40 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
     }
 }
 
+int SingleParamCheckProcess(const void *pCurParam, cotParamResetOpt_e eResetOpt)
+{
+    return cotParam_SingleParamCheckProcess(cotParam_FindParamByParamPtr(&sg_tParamManager, pCurParam), eResetOpt);
+}
+
+cotParamCheckRet_e SingleParamCheck(const void *pCurParam, const void *pCheckValue)
+{
+    cotParamCheckRet_e eCheckResult;
+
+    cotParam_SingleParamCheckInput(cotParam_FindParamByParamPtr(&sg_tParamManager, pCurParam), pCheckValue, &eCheckResult);
+
+    return eCheckResult;
+}
+
+cotParamCheckRet_e SingleParamSelfCheck(const void *pCurParam)
+{
+    cotParamCheckRet_e eCheckResult;
+
+    cotParam_SingleParamSelfCheck(cotParam_FindParamByParamPtr(&sg_tParamManager, pCurParam), &eCheckResult);
+
+    return eCheckResult;
+}
+
+void SingleParamResetResetDefValue(const void *pCurParam)
+{
+    cotParam_SingleParamResetDefValue(cotParam_FindParamByParamPtr(&sg_tParamManager, pCurParam));
+}
+
 void ShowAllParam(void)
 {
     size_t idx = 0;
     cotParamInfo_t *paramInfo;
 
-    printf("%4s    %-15s %-8s %-8s %-8s %-10s %-10s %-10s %-10s\n", "id", "name", "type", "length", "attr", "val", "def", "min", "max");
+    printf("%4s    %-24s %-8s %-8s %-8s %-10s %-10s %-10s %-10s\n", "id", "name", "type", "length", "attr", "val", "def", "min", "max");
 
     do
     {
@@ -495,19 +506,6 @@ void ShowAllParam(void)
 
         ShowSingleParam(paramInfo);
     } while (paramInfo != NULL);
+    printf("\n");
 }
 
-void ShowAllParam_1(void)
-{
-    size_t idx = 0;
-    cotParamInfo_t *paramInfo;
-
-    printf("%4s    %-15s %-8s %-8s %-8s %-10s %-10s %-10s %-10s\n", "id", "name", "type", "length", "attr", "val", "def", "min", "max");
-
-    do
-    {
-        paramInfo = cotParam_IterateList(&sg_tParamManager1, &idx);
-
-        ShowSingleParam(paramInfo);
-    } while (paramInfo != NULL);
-}
