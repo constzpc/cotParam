@@ -1,12 +1,15 @@
-CURR_DIR_PATH=$(shell pwd)
+ifeq ($(OS),Windows_NT)
+    CURR_DIR_PATH = $(CURDIR)
+else
+    CURR_DIR_PATH = $(shell pwd)
+endif
 
-CURR_DIR_PATH="C:\Users\const\Desktop\param\param\Demo\cmd_shell"
 
 GCC:=gcc
-INC+=-I${CURR_DIR_PATH}/../../Param/inc
+INC+=-I${CURR_DIR_PATH}/../../
 INC+=-I${CURR_DIR_PATH}/
 
-SRC+=${CURR_DIR_PATH}/../../Param/src/param.c
+SRC+=${CURR_DIR_PATH}/../../cot_param.c
 SRC+=${CURR_DIR_PATH}/demo.c
 SRC+=${CURR_DIR_PATH}/param_demo.c
 
