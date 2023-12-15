@@ -30,6 +30,13 @@ int main()
     // g_test_3 = -20.5;
     sprintf(g_szString, "sd");
 
+    SingleParamChange(&g_tTestVal.uiValue, 1500);
+
+    SingleParamChange(&g_tTestVal.uiValue, 800); // 修改无效
+
+    SingleParamChange(g_tTestVal.szString_1, "wwww.bau");
+    SingleParamChange(g_tTestVal.szString_1, "ww");  // 修改无效
+
     SaveParam(true);
     ReloadParam(true);
 

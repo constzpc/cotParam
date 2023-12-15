@@ -446,7 +446,7 @@ const cotParamInfo_t *cotParam_FindParamByParamPtr(const cotParamManager_t *pMan
 {
     cotParamInfo_t *pInfo;
 
-    if (pManager != NULL)
+    if (pManager != NULL || pCurParam != NULL)
     {
         pInfo = FindParamByParamPtr(pManager, pCurParam);
 
@@ -1354,4 +1354,135 @@ int cotParam_Deserialization(const cotParamManager_t* pManager, const uint8_t *p
     return 0;
 }
 
+/**
+  * @brief      修改参数值，新值校验不通过则不修改
+  * 
+  * @note       该函数主要是方便进行二次函数封装，隐藏参数表管理句柄入参，可参考 cotParam_SingleParamChange 的实现
+  * @param      pManager   参数表管理句柄
+  * @param      pCurParam  当前参数数据指针
+  * @param      paramList  可变参数列表
+  * @return     0,成功; -1,失败; 
+  */
+int cotParam_SingleParamChangeImpl(const cotParamManager_t* pManager, const void *pCurParam, va_list paramList)
+{
+    const cotParamInfo_t *pParam = cotParam_FindParamByParamPtr(pManager, pCurParam);
+
+    if (pParam == NULL)
+    {
+        return -1;
+    }
+
+    switch (pParam->type)
+    {
+    case COT_PARAM_INT8:
+    {
+        COT_PARAM_INT8_T val = (COT_PARAM_INT8_T)va_arg(paramList, COT_PARAM_INT32_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+
+    case COT_PARAM_INT16:
+    {
+        COT_PARAM_INT16_T val = (COT_PARAM_INT16_T)va_arg(paramList, COT_PARAM_INT32_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+
+    case COT_PARAM_INT32:
+    {
+        COT_PARAM_INT32_T val = (COT_PARAM_INT32_T)va_arg(paramList, COT_PARAM_INT32_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+#if COT_PARAM_USE_64_BIT_LENGTH
+    case COT_PARAM_INT64:
+    {
+        COT_PARAM_INT64_T val = (COT_PARAM_INT64_T)va_arg(paramList, COT_PARAM_INT64_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+#endif
+    case COT_PARAM_UINT8:
+    {
+        COT_PARAM_UINT8_T val = (COT_PARAM_UINT8_T)va_arg(paramList, COT_PARAM_UINT32_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+
+    case COT_PARAM_UINT16:
+    {
+        COT_PARAM_UINT16_T val = (COT_PARAM_UINT16_T)va_arg(paramList, COT_PARAM_UINT32_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+
+    case COT_PARAM_UINT32:
+    {
+        COT_PARAM_UINT32_T val = (COT_PARAM_UINT32_T)va_arg(paramList, COT_PARAM_UINT32_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+#if COT_PARAM_USE_64_BIT_LENGTH
+    case COT_PARAM_UINT64:
+    {
+        COT_PARAM_UINT64_T val = (COT_PARAM_UINT64_T)va_arg(paramList, COT_PARAM_UINT64_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+#endif
+    case COT_PARAM_FLOAT:
+    {
+        COT_PARAM_FLOAT_T val = (COT_PARAM_FLOAT_T)va_arg(paramList, COT_PARAM_DOUBLE_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+#if COT_PARAM_USE_64_BIT_LENGTH
+    case COT_PARAM_DOUBLE:
+    {
+        COT_PARAM_DOUBLE_T val = (COT_PARAM_DOUBLE_T)va_arg(paramList, COT_PARAM_DOUBLE_T);
+        cotParam_SingleParamUpdate(pParam, &val, COT_PARAM_RESET_NONE);
+    }
+        break;
+#endif
+#if COT_PARAM_USE_STRING_TYPE
+    case COT_PARAM_STRING:
+        {
+            char *pszString = (char *)va_arg(paramList, char *);
+            char szString[COT_PARAM_STRING_MAX_LENGTH] = {0};
+
+            memcpy(szString, pszString, strlen(pszString) >= COT_PARAM_STRING_MAX_LENGTH ? 
+                            (COT_PARAM_STRING_MAX_LENGTH - 1) : strlen(pszString));
+            cotParam_SingleParamUpdate(pParam, szString, COT_PARAM_RESET_NONE);
+        }
+        break;
+#endif
+    default:
+        return -1;
+    }
+    
+    return 0;
+}
+
+/**
+  * @brief      修改参数值，新值校验不通过则不修改
+  * 
+  * @code       如：cotParam_SingleParamChange(&sg_tParamManager, &g_test_u16, 60)
+  * @param      pManager   参数表管理句柄
+  * @param      pCurParam  当前参数数据指针
+  * @param      ... 新值（只有一个参数）
+  * @return     0,成功; -1,失败; 
+  */
+int cotParam_SingleParamChange(const cotParamManager_t* pManager, const void *pCurParam, ...)
+{
+    int ret = 0;
+    va_list paramList;
+
+    va_start(paramList, pCurParam);
+
+    ret = cotParam_SingleParamChangeImpl(pManager, pCurParam, paramList);
+
+    va_end(paramList);
+
+    return ret;
+}
 
