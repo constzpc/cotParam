@@ -3,8 +3,8 @@
   * @file    cot_param.c
   * @brief   该文件提供参数管理框架功能
   * @author  const_zpc  any question please send mail to const_zpc@163.com
-  * @version V2.0
-  * @date    2023-12-10
+  * @version V2.1
+  * @date    2024-1-31
   *
   * @details  功能详细说明：
   *           + 参数修改和重置管理
@@ -603,6 +603,8 @@ static cotParamCheckRet_e ValidateRangeByVoid(const cotParamInfo_t *pParam, cons
 {
     Value_u uValue;
 
+    memset(&uValue, 0, sizeof(uValue));
+
     switch (pParam->type)
     {
     case COT_PARAM_INT8:
@@ -647,8 +649,7 @@ static cotParamCheckRet_e ValidateRangeByVoid(const cotParamInfo_t *pParam, cons
 #endif
 #if COT_PARAM_USE_STRING_TYPE
     case COT_PARAM_STRING:
-        memcpy(uValue.str, pval, strlen(pval) > COT_PARAM_STRING_MAX_LENGTH ? COT_PARAM_STRING_MAX_LENGTH + 2 : strlen(pval) + 1);
-        uValue.str[COT_PARAM_STRING_MAX_LENGTH + 2] = '\0';
+        memcpy(uValue.str, pval, strlen(pval) >= COT_PARAM_STRING_MAX_LENGTH ? COT_PARAM_STRING_MAX_LENGTH - 1 : strlen(pval));
         break;
 #endif
     default:
