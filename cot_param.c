@@ -33,7 +33,7 @@ typedef union
     int64_t s64val;
     double fVal;
 #if COT_PARAM_USE_STRING_TYPE
-    char str[COT_PARAM_STRING_MAX_LENGTH + 2];
+    char str[COT_PARAM_STRING_MAX_LENGTH];
 #endif
 } Value_u;
 
