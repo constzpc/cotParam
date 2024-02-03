@@ -16,6 +16,8 @@
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 #include "cot_param_type.h"
 
+#include <stdarg.h>
+
 #ifdef __cplusplus
  extern "C" {
 #endif 
@@ -158,6 +160,9 @@ extern int cotParam_SingleParamSelfCheck(const cotParamInfo_t *pParam, cotParamC
 extern int cotParam_SingleParamResetDefValue(const cotParamInfo_t *pParam);
 extern int cotParam_SingleParamResetMinValue(const cotParamInfo_t *pParam);
 extern int cotParam_SingleParamResetMaxValue(const cotParamInfo_t *pParam);
+
+extern int cotParam_SingleParamChangeImpl(const cotParamManager_t* pManager, const void *pCurParam, va_list paramList);
+extern int cotParam_SingleParamChange(const cotParamManager_t* pManager, const void *pCurParam, ...);
 
 #ifdef __cplusplus
  }

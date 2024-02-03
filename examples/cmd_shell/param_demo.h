@@ -35,6 +35,7 @@ cotParamCheckRet_e SingleParamCheck(const void *pCurParam, const void *pCheckVal
 cotParamCheckRet_e SingleParamSelfCheck(const void *pCurParam);
 
 void SingleParamResetResetDefValue(const void *pCurParam);
+void SingleParamChange(const void *pCurParam, ...);
 
 void ShowAllParam(void);
 #endif

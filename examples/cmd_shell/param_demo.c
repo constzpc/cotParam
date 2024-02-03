@@ -509,3 +509,14 @@ void ShowAllParam(void)
     printf("\n");
 }
 
+void SingleParamChange(const void *pCurParam, ...)
+{
+    va_list paramList;
+
+    va_start(paramList, pCurParam);
+
+    cotParam_SingleParamChangeImpl(&sg_tParamManager, pCurParam, paramList);
+
+    va_end(paramList);
+}
+

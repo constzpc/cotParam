@@ -566,6 +566,27 @@ void test_ResetValue(void)
     TEST_ASSERT_EQUAL_UINT(3000, g_test_u16);
 }
 
+void test_ChangeValue(void)
+{
+    g_test_u16 = 200;
+    TEST_ASSERT_EQUAL_INT(0, cotParam_SingleParamChange(&sg_tParamManager, &g_test_u16, 60));
+    TEST_ASSERT_EQUAL_UINT(200, g_test_u16);
+    TEST_ASSERT_EQUAL_INT(0, cotParam_SingleParamChange(&sg_tParamManager, &g_test_u16, 120));
+    TEST_ASSERT_EQUAL_UINT(120, g_test_u16);
+    TEST_ASSERT_EQUAL_INT(0, cotParam_SingleParamChange(&sg_tParamManager, &g_test_u16, 4000));
+    TEST_ASSERT_EQUAL_UINT(120, g_test_u16);
+
+#if COT_PARAM_USE_STRING_TYPE
+    strcpy(g_test_str, "123456");
+    TEST_ASSERT_EQUAL_INT(0, cotParam_SingleParamChange(&sg_tParamManager, g_test_str, "ABCDEF"));
+    TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
+    TEST_ASSERT_EQUAL_INT(0, cotParam_SingleParamChange(&sg_tParamManager, g_test_str, "ABCD"));
+    TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
+    TEST_ASSERT_EQUAL_INT(0, cotParam_SingleParamChange(&sg_tParamManager, g_test_str, "ABCDEF123456"));
+    TEST_ASSERT_EQUAL_STRING("ABCDEF", g_test_str);
+#endif
+}
+
 // Run the test suite
 int main(void)
 {
@@ -580,6 +601,7 @@ int main(void)
     RUN_TEST(test_CheckCustomWay);
     RUN_TEST(test_SetNewValue);
     RUN_TEST(test_ResetValue);
+    RUN_TEST(test_ChangeValue);
 
     UNITY_END();
 
