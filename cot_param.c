@@ -353,49 +353,6 @@ cotParamInfo_t *cotParam_IterateList(const cotParamManager_t *pManager, size_t *
     return p;
 }
 
-#if ( COT_PARAM_NAME_MAX_LENGTH > 1)
-static cotParamInfo_t *FindParamByName(const cotParamManager_t *pManager, const char *pszName)
-{
-    for (uint16_t i = 0; i < pManager->count; ++i)
-    {
-        if (strcmp(pManager->pParamTable[i].pszName, pszName) == 0)
-        {
-            return &pManager->pParamTable[i];
-        }
-    }
-
-    return NULL;
-}
-#endif
-
-/**
-  * @brief      根据参数名称查找参数信息
-  *
-  * @attention  无可读权限时会查找失败
-  * @param      pManager   参数表管理句柄
-  * @param      pszName   参数名称
-  * @return     参数信息
-  */
-const cotParamInfo_t *cotParam_FindParamByName(const cotParamManager_t *pManager, const char *pszName)
-{
-#if ( COT_PARAM_NAME_MAX_LENGTH > 1)
-    cotParamInfo_t *pInfo;
-
-    if (pManager != NULL)
-    {
-        pInfo = FindParamByName(pManager, pszName);
-
-        if (pInfo->attr & COT_PARAM_ATTR_READ)
-        {
-            return pInfo;
-        }
-    }
-
-#endif
-    return NULL;
-}
-
-
 static cotParamInfo_t *FindParamByID(const cotParamManager_t *pManager, uint16_t id)
 {
     for (uint16_t i = 0; i < pManager->count; ++i)

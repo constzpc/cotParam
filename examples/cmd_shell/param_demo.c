@@ -235,7 +235,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
         switch (paramInfo->type)
         {
         case COT_PARAM_INT8:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->name.pTextString, 
                 "int8_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt8);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -255,7 +255,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_INT16:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->name.pTextString, 
                 "int16_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt16);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -275,7 +275,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_INT32:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10d ", paramInfo->id, paramInfo->name.pTextString, 
                 "int32_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt32);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -295,7 +295,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_INT64:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10ld ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10ld ", paramInfo->id, paramInfo->name.pTextString, 
                 "int64_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pInt64);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -315,7 +315,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT8:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->name.pTextString, 
                 "uint8_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint8);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -335,7 +335,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT16:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->name.pTextString, 
                 "uint16_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint16);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -355,7 +355,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT32:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10u ", paramInfo->id, paramInfo->name.pTextString, 
                 "uint32_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint32);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -375,7 +375,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_UINT64:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10lu ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10lu ", paramInfo->id, paramInfo->name.pTextString, 
                 "uint64_t", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pUint64);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -395,7 +395,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_FLOAT:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->name.pTextString, 
                 "float", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pFloat);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -415,7 +415,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             }
             break;
         case COT_PARAM_DOUBLE:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10f ", paramInfo->id, paramInfo->name.pTextString, 
                 "double", paramInfo->length, Attr(paramInfo->attr), *paramInfo->unCurValuePtr.pDouble);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)
@@ -436,7 +436,7 @@ void ShowSingleParam(const cotParamInfo_t *paramInfo)
             break;
 #if COT_PARAM_USE_STRING_TYPE
         case COT_PARAM_STRING:
-            printf(" %-4d   %-24s %-10s %-6d %-8s %-10s ", paramInfo->id, paramInfo->pszName, 
+            printf(" %-4d   %-24s %-10s %-6d %-8s %-10s ", paramInfo->id, paramInfo->name.pTextString, 
                 "string", paramInfo->length, Attr(paramInfo->attr), paramInfo->unCurValuePtr.pString);
 
             if (paramInfo->attr & COT_PARAM_ATTR_RESET)

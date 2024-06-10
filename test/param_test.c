@@ -130,7 +130,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[0].length, 2);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[0].type, COT_PARAM_INT16);
     TEST_ASSERT_EQUAL_HEX8(sg_tParamManager.pParamTable[0].attr, COT_PARAM_ATTR_WR);
-    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[0].pszName, "g_test_1");
+    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[0].name.pTextString, "g_test_1");
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[0].unCurValuePtr.pVoid , &g_test_1);
     TEST_ASSERT_NULL(sg_tParamManager.pParamTable[0].unDefValuePtr.pVoid);
     TEST_ASSERT_NULL(sg_tParamManager.pParamTable[0].unMinValuePtr.pVoid);
@@ -140,7 +140,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[1].length, 2);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[1].type, COT_PARAM_UINT16);
     TEST_ASSERT_EQUAL_HEX8(sg_tParamManager.pParamTable[1].attr, COT_PARAM_ATTR_WR | COT_PARAM_ATTR_RESET);
-    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[1].pszName, "g_test_2");
+    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[1].name.pTextString, "g_test_2");
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[1].unCurValuePtr.pVoid , &g_test_2);
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[1].unDefValuePtr.pVoid);
     TEST_ASSERT_NULL(sg_tParamManager.pParamTable[1].unMinValuePtr.pVoid);
@@ -150,7 +150,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[2].length, 4);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[2].type, COT_PARAM_FLOAT);
     TEST_ASSERT_EQUAL_HEX8(sg_tParamManager.pParamTable[2].attr, COT_PARAM_ATTR_READ | COT_PARAM_ATTR_RESET | COT_PARAM_ATTR_RANGE);
-    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[2].pszName, "g_test_float");
+    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[2].name.pTextString, "g_test_float");
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[2].unCurValuePtr.pVoid , &g_test_float);
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[2].unDefValuePtr.pVoid);
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[2].unMinValuePtr.pVoid);
@@ -162,7 +162,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].length, sizeof(g_test_str));
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[4].type, COT_PARAM_STRING);
     TEST_ASSERT_EQUAL_HEX8(sg_tParamManager.pParamTable[4].attr, COT_PARAM_ATTR_WR | COT_PARAM_ATTR_RESET | COT_PARAM_ATTR_RANGE);
-    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[4].pszName, "g_test_str");
+    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[4].name.pTextString, "g_test_str");
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[4].unCurValuePtr.pVoid , g_test_str);
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[4].unDefValuePtr.pVoid);
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[4].unMinValuePtr.pVoid);
@@ -172,7 +172,7 @@ void test_ParamInit(void)
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[3].length, 10);
     TEST_ASSERT_EQUAL_UINT(sg_tParamManager.pParamTable[3].type, COT_PARAM_STRING);
     TEST_ASSERT_EQUAL_HEX8(sg_tParamManager.pParamTable[3].attr, COT_PARAM_ATTR_WR | COT_PARAM_ATTR_RESET | COT_PARAM_ATTR_RANGE);
-    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[3].pszName, "g_test_str");
+    TEST_ASSERT_EQUAL_STRING(sg_tParamManager.pParamTable[3].name.pTextString, "g_test_str");
     TEST_ASSERT_EQUAL_PTR(sg_tParamManager.pParamTable[3].unCurValuePtr.pVoid , COT_PARAM_STR_CUR_VALUE(g_test_str));
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[3].unDefValuePtr.pVoid);
     TEST_ASSERT_NOT_NULL(sg_tParamManager.pParamTable[3].unMinValuePtr.pVoid);
@@ -379,10 +379,7 @@ void test_IterateParam(void)
 void test_FindParam(void)
 {
     const cotParamInfo_t *paramInfo;
-#if COT_PARAM_USE_64_BIT_LENGTH
-    paramInfo = cotParam_FindParamByName(&sg_tParamManager, "g_test_double");
-    TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[3], paramInfo);
-#endif
+
     paramInfo = cotParam_FindParamByID(&sg_tParamManager, 3);
     TEST_ASSERT_EQUAL_PTR(&sg_ParamTable[2], paramInfo);
 

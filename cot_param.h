@@ -82,7 +82,8 @@
 #if COT_PARAM_USE_CUSTOM_CHECK
  #if (COT_PARAM_NAME_MAX_LENGTH > 1)
 #define COT_PARAM_ITEM_BIND_NUM_DEF_RANGE_IMPL(_id, _name, _variable, _type, _length, _attr, _defVal, _minVal, _maxVal, _check) { \
-                                          .pszName = _name, .id = _id, .type = _type, .length = _length, .attr = _attr, \
+                                          .name = {.textId = (size_t)(_name), .pTextString =  (char*)(_name)}, \
+                                          .id = _id, .type = _type, .length = _length, .attr = _attr, \
                                           .unCurValuePtr.pVoid = _variable, .unDefValuePtr.pVoid = _defVal, \
                                           .unMinValuePtr.pVoid = _minVal, .unMaxValuePtr.pVoid = _maxVal, .pfnParamCheck = _check}
  #else
@@ -95,7 +96,8 @@
 #else
  #if (COT_PARAM_NAME_MAX_LENGTH > 1)
 #define COT_PARAM_ITEM_BIND_NUM_DEF_RANGE_IMPL(_id, _name, _variable, _type, _length, _attr, _defVal, _minVal, _maxVal, _check) { \
-                                          .pszName = _name, .id = _id, .type = _type, .length = _length, .attr = _attr, \
+                                          .name = {.textId = (size_t)(_name), .pTextString =  (char*)(_name)}, \
+                                          .id = _id, .type = _type, .length = _length, .attr = _attr, \
                                           .unCurValuePtr.pVoid = _variable, .unDefValuePtr.pVoid = _defVal, \
                                           .unMinValuePtr.pVoid = _minVal, .unMaxValuePtr.pVoid = _maxVal}
  #else
@@ -148,7 +150,6 @@ extern int cotParam_Deserialization(const cotParamManager_t* pManager, const uin
 
 extern cotParamInfo_t *cotParam_IterateList(const cotParamManager_t *pManager, size_t *psIdx);
 
-extern const cotParamInfo_t *cotParam_FindParamByName(const cotParamManager_t *pManager, const char *pszName);
 extern const cotParamInfo_t *cotParam_FindParamByID(const cotParamManager_t* pManager, uint16_t id);
 extern const cotParamInfo_t *cotParam_FindParamByParamPtr(const cotParamManager_t* pManager, const void *pCurParam);
 
