@@ -82,7 +82,7 @@
 #if COT_PARAM_USE_CUSTOM_CHECK
  #if (COT_PARAM_NAME_MAX_LENGTH > 1)
 #define COT_PARAM_ITEM_BIND_NUM_DEF_RANGE_IMPL(_id, _name, _variable, _type, _length, _attr, _defVal, _minVal, _maxVal, _check) { \
-                                          .name = {.textId = (size_t)(_name), .pTextString =  (char*)(_name)}, \
+                                          .name = {.pVoid = (void *)(_name)}, \
                                           .id = _id, .type = _type, .length = _length, .attr = _attr, \
                                           .unCurValuePtr.pVoid = _variable, .unDefValuePtr.pVoid = _defVal, \
                                           .unMinValuePtr.pVoid = _minVal, .unMaxValuePtr.pVoid = _maxVal, .pfnParamCheck = _check}
@@ -96,7 +96,7 @@
 #else
  #if (COT_PARAM_NAME_MAX_LENGTH > 1)
 #define COT_PARAM_ITEM_BIND_NUM_DEF_RANGE_IMPL(_id, _name, _variable, _type, _length, _attr, _defVal, _minVal, _maxVal, _check) { \
-                                          .name = {.textId = (size_t)(_name), .pTextString =  (char*)(_name)}, \
+                                          .name = {.pVoid = (void *)(_name)}, \
                                           .id = _id, .type = _type, .length = _length, .attr = _attr, \
                                           .unCurValuePtr.pVoid = _variable, .unDefValuePtr.pVoid = _defVal, \
                                           .unMinValuePtr.pVoid = _minVal, .unMaxValuePtr.pVoid = _maxVal}

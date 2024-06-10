@@ -119,6 +119,8 @@ typedef int (*cotParamCheck_f)(const void *pCurParam);
 
 typedef union
 {
+    void     *pVoid;                   /*!< 通用指针(目的消除编译警告) */
+
     size_t    textId;                  /*!< 文本ID */
 
     char     *pTextString;             /*!< 文本字符串 */
