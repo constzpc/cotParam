@@ -117,6 +117,13 @@ typedef union {
 
 typedef int (*cotParamCheck_f)(const void *pCurParam);
 
+typedef union
+{
+    size_t    textId;                  /*!< 文本ID */
+
+    char     *pTextString;             /*!< 文本字符串 */
+} cotParamDsecStr_u;
+
 /**
   * @brief  定义无内存的参数结构体信息
   * 
@@ -124,7 +131,7 @@ typedef int (*cotParamCheck_f)(const void *pCurParam);
 typedef struct stuParamInfo
 {
 #if ( COT_PARAM_NAME_MAX_LENGTH > 1)
-    const char *pszName;                    /*!< 名称 */
+    cotParamDsecStr_u name;                 /*!< 名称 */
 #endif
     uint16_t id;                            /*!< 唯一ID */
     uint8_t type;                           /*!< 类型, @enum ParamType_e */
