@@ -581,19 +581,19 @@ static cotParamCheckRet_e ValidateRangeByVoid(const cotParamInfo_t *pParam, cons
         break;
 #endif
     case COT_PARAM_UINT8:
-        uValue.s64val = *(COT_PARAM_UINT8_T *)pval;
+        uValue.u64val = *(COT_PARAM_UINT8_T *)pval;
         break;
 
     case COT_PARAM_UINT16:
-        uValue.s64val = *(COT_PARAM_UINT16_T *)pval;
+        uValue.u64val = *(COT_PARAM_UINT16_T *)pval;
         break;
 
     case COT_PARAM_UINT32:
-        uValue.s64val = *(COT_PARAM_UINT32_T *)pval;
+        uValue.u64val = *(COT_PARAM_UINT32_T *)pval;
         break;
 #if COT_PARAM_USE_64_BIT_LENGTH
     case COT_PARAM_UINT64:
-        uValue.s64val = *(COT_PARAM_UINT64_T *)pval;
+        uValue.u64val = *(COT_PARAM_UINT64_T *)pval;
         break;
 #endif
     case COT_PARAM_FLOAT:
